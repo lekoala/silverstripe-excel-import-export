@@ -1,0 +1,19 @@
+---
+Name: excel-import-export
+After:
+  - 'framework/*'
+  - 'cms/*'
+---
+ModelAdmin:
+  export_csv: false
+  export_excel: true
+  bulk_manage: true
+  extensions:
+    - ModelAdminExcelExtension
+SecurityAdmin:
+  export_csv: false
+  export_excel: true
+  bulk_manage: true
+  allow_import: true
+  extensions:
+    - SecurityAdminExcelExtension
