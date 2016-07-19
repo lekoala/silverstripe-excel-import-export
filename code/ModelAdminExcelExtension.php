@@ -34,7 +34,8 @@ class ModelAdminExcelExtension extends Extension
         if ($classConfig->bulk_manage && class_exists('GridFieldBulkManager')) {
             $already = $config->getComponentByType('GridFieldBulkManager');
             if (!$already) {
-                $config->addComponent(new GridFieldBulkManager());
+                $config->addComponent($bulkManager = new GridFieldBulkManager());
+                $bulkManager->removeBulkAction('unLink');
             }
         }
 
@@ -65,7 +66,7 @@ class ModelAdminExcelExtension extends Extension
                 $importerClasses[$modelName] = 'ExcelBulkLoader';
             }
 
-            $owner->set_stat('model_importers',$importerClasses);
+            $owner->set_stat('model_importers', $importerClasses);
         }
 
         $modelSNG  = singleton($class);

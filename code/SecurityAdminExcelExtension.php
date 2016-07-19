@@ -101,7 +101,8 @@ class SecurityAdminExcelExtension extends Extension
         if ($classConfig->bulk_manage && class_exists('GridFieldBulkManager')) {
             $already = $config->getComponentByType('GridFieldBulkManager');
             if (!$already) {
-                $config->addComponent(new GridFieldBulkManager());
+                $config->addComponent($bulkManager = new GridFieldBulkManager());
+                $bulkManager->removeBulkAction('unLink');
             }
         }
 
@@ -142,6 +143,7 @@ class SecurityAdminExcelExtension extends Extension
     protected function importFormRequirements()
     {
         Requirements::clear();
+        Requirements::javascript(THIRDPARTY_DIR.'/jquery/jquery.js');
         Requirements::css(FRAMEWORK_ADMIN_DIR.'/css/screen.css');
     }
 

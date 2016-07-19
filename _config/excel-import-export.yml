@@ -7,7 +7,7 @@ After:
 ModelAdmin:
   export_csv: false
   export_excel: true
-  bulk_manage: true
+  bulk_manage: false
   extensions:
     - ModelAdminExcelExtension
 SecurityAdmin:
