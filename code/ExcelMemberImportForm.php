@@ -14,7 +14,7 @@ class ExcelMemberImportForm extends MemberImportForm
         if (!$fields) {
             $helpHtml = _t(
                 'ExcelMemberImportForm.Help1',
-                '<a href="{link}">Download sample file</a></small></p>',
+                '<p><a href="{link}">Download sample file</a></p>',
                 array('link' => $controller->Link('downloadsample/Member'))
             );
             $helpHtml .= _t(
@@ -47,8 +47,7 @@ class ExcelMemberImportForm extends MemberImportForm
 
         if (!$actions) {
             $action  = new FormAction('doImport',
-                _t('ExcelMemberImportForm.BtnImport',
-                    'Import from file'));
+                _t('ExcelMemberImportForm.BtnImport', 'Import from file'));
             $action->addExtraClass('ss-ui-button');
             $actions = new FieldList($action);
         }

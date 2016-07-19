@@ -14,7 +14,7 @@ class ExcelGroupImportForm extends GroupImportForm
         if (!$fields) {
             $helpHtml = _t(
                 'ExcelGroupImportForm.Help1',
-                '<a href="{link}">Download sample file</a></small></p>',
+                '<p><a href="{link}">Download sample file</a></p>',
                 array('link' => $controller->Link('downloadsample/Group'))
             );
             $helpHtml .= _t(
@@ -26,7 +26,6 @@ class ExcelGroupImportForm extends GroupImportForm
                 .'<li>Permission codes can be assigned by the <em>PermissionCode</em> column. Existing permission codes are not '
                 .'cleared.</li>'
                 .'</ul>'
-                .'</div>'
             );
 
             $importer   = new GroupCsvBulkLoader();
