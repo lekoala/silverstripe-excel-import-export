@@ -33,13 +33,15 @@ class ExcelGroupImportForm extends GroupImportForm
             $helpHtml   = sprintf($helpHtml,
                 implode(', ', array_keys($importSpec['fields'])));
 
-            $fields    = new FieldList(
+            $extensions = array('csv', 'xls', 'xlsx', 'ods', 'txt');
+            $fields     = new FieldList(
                 new LiteralField('Help', $helpHtml),
-                $fileField = new FileField(
+                $fileField  = new FileField(
                 'File',
                 _t(
                     'ExcelGroupImportForm.FileFieldLabel',
-                    'File <small>(Allowed extensions: *.csv, *.xls, *.xlsx, *.ods, *.txt)</small>'
+                    'File <small><br/>(allowed extensions: {extensions})</small>',
+                    array('extensions' => implode(', ', $extensions))
                 )
                 )
             );

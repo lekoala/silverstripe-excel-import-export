@@ -32,13 +32,14 @@ class ExcelMemberImportForm extends MemberImportForm
             $helpHtml   = sprintf($helpHtml,
                 implode(', ', array_keys($importSpec['fields'])));
 
+            $extensions = array('csv', 'xls', 'xlsx', 'ods', 'txt');
             $fields    = new FieldList(
                 new LiteralField('Help', $helpHtml),
                 $fileField = new FileField(
                 'File',
                 _t(
                     'ExcelMemberImportForm.FileFieldLabel',
-                    'File <small>(Allowed extensions: *.csv, *.xls, *.xlsx, *.ods, *.txt)</small>'
+                    'File <small><br/>(allowed extensions: {extensions})</small>', array('extensions' => implode(', ', $extensions))
                 )
                 )
             );
