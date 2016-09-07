@@ -47,6 +47,21 @@ class SecurityAdminExcelExtension extends Extension
 
             $form->Fields()->addFieldToTab('Root.Groups', $field);
         }
+        if(!$classConfig->allow_import) {
+            // Cleanup headers
+            $usersTab = $form->Fields()->findOrMakeTab('Root.Users');
+            foreach($usersTab->Fields() as $f) {
+                if($f instanceof HeaderField) {
+                    $usersTab->Fields()->remove($f);
+                }
+            }
+            $groupsTab = $form->Fields()->findOrMakeTab('Root.Groups');
+            foreach($groupsTab->Fields() as $f) {
+                if($f instanceof HeaderField) {
+                    $groupsTab->Fields()->remove($f);
+                }
+            }
+        }
 
         // Export features
 
