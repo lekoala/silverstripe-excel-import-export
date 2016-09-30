@@ -91,7 +91,7 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
      */
     public function handleExport($gridField, $request = null)
     {
-        $now = Date("d-m-Y-H-i");
+        $now = Date("Ymd_Hi");
 
         if ($excel = $this->generateExportFileData($gridField)) {
 
@@ -136,24 +136,17 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
         $singular = $class ? $singl->i18n_singular_name() : '';
         $plural   = $class ? $singl->i18n_plural_name() : '';
 
-        $filter           = new FileNameFilter;
-        $this->exportName = $filter->filter('export-'.$plural);
+        $filter = new FileNameFilter;
+        if ($this->exportName) {
+            $this->exportName = $filter->filter($this->exportName);
+        } else {
+            $this->exportName = $filter->filter('export-'.$plural);
+        }
 
         $excel = new PHPExcel();
-        $excel->getProperties()
-            ->setTitle(_t(
-                    'TableListField.EXCELEXPORT', '{singular} export',
-                    'Title for the spread sheet export',
-                    array('singular' => $singular)
-            ))
-            ->setDescription(_t(
-                    'TableListField.EXCELEXPORT',
-                    'List of {plural} exported out of a SilverStripe website',
-                    'Description for the spread sheet export',
-                    array('pluralr' => $plural)
-                )
-        );
-
+        $excelProperties = $excel->getProperties();
+        $excelProperties->setTitle($this->exportName);
+        
         $sheet = $excel->getActiveSheet();
         if ($plural) {
             $sheet->setTitle($plural);
@@ -295,6 +288,24 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
     public function setExportType($exportType)
     {
         $this->exportType = $exportType;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getExportName()
+    {
+        return $this->exportName;
+    }
+
+    /**
+     * @param string $exportName
+     * @return \ExcelGridFieldExportButton
+     */
+    public function setExportName($exportName)
+    {
+        $this->exportName = $exportName;
         return $this;
     }
 }
