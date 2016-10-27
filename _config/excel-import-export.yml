@@ -17,3 +17,14 @@ SecurityAdmin:
   allow_import: true
   extensions:
     - SecurityAdminExcelExtension
+Member:
+  unexported_fields:
+    - TempIDHash
+    - TempIDExpired
+    - Password
+    - RememberLoginToken
+    - AutoLoginHash
+    - AutoLoginExpired
+    - PasswordEncryption
+    - Salt
+    - PasswordExpiry
