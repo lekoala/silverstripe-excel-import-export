@@ -10,7 +10,12 @@ class ExcelImportExport
 
     public static function allFieldsForClass($class)
     {
-        $fields = array_keys(DataObject::database_fields($class));
+        $dataClasses = ClassInfo::dataClassesFor($class);
+        $fields      = array();
+        foreach ($dataClasses as $dataClass) {
+            $fields = array_merge($fields,
+                array_keys(DataObject::database_fields($dataClass)));
+        }
         return array_combine($fields, $fields);
     }
 
