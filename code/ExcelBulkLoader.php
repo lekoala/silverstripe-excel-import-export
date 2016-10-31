@@ -128,6 +128,24 @@ class ExcelBulkLoader extends BulkLoader
         return $extensionType;
     }
 
+    protected function getUploadFileExtension()
+    {
+        if ($this->uploadFile) {
+            return pathinfo($this->uploadFile['name'], PATHINFO_EXTENSION);
+        }
+        return $this->fileType;
+    }
+
+    protected function mergeRowWithHeaders($row, $headers, $headersCount = null)
+    {
+        if ($headersCount === null) {
+            $headersCount = count($headers);
+        }
+        $row = array_slice($row, 0, $headersCount);
+        $row = array_combine($headers, $row);
+        return $row;
+    }
+
     /**
      * @param string $filepath
      * @param boolean $preview
@@ -135,12 +153,7 @@ class ExcelBulkLoader extends BulkLoader
     protected function processAll($filepath, $preview = false)
     {
         $results = new BulkLoader_Result();
-
-        if ($this->uploadFile) {
-            $ext = pathinfo($this->uploadFile['name'], PATHINFO_EXTENSION);
-        } else {
-            $ext = $this->fileType;
-        }
+        $ext     = $this->getUploadFileExtension();
 
         $reader = PHPExcel_IOFactory::createReader($this->getReaderType($ext));
         $reader->setReadDataOnly(true);
@@ -165,12 +178,8 @@ class ExcelBulkLoader extends BulkLoader
         $this->db = Config::inst()->get($this->objectClass, 'db');
 
         foreach ($data as $row) {
-            if ($headersCount) {
-                // Limit row to header size
-                $limitedRow = array_slice($row, 0, $headersCount);
-                $row        = array_combine($headers, $limitedRow);
-            }
-            $id = $this->processRecord($row, $this->columnMap, $results,
+            $row = $this->mergeRowWithHeaders($row, $headers, $headersCount);
+            $id  = $this->processRecord($row, $this->columnMap, $results,
                 $preview);
         }
 
