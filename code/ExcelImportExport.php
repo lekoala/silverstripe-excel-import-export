@@ -41,6 +41,34 @@ class ExcelImportExport
 
     public static function sampleFileForClass($class)
     {
+        $fileName = "sample-file-for-$class.xlsx";
+        $excel    = null;
+
+        $sng = singleton($class);
+        if ($sng->hasMethod('sampleExcelFile')) {
+            $excel = $sng->sampleExcelFile();
+            if (is_string($excel) && is_file($excel)) {
+                header('Content-type: application/vnd.ms-excel');
+                header('Content-Disposition: attachment; filename="'.$fileName.'"');
+                readfile($excel);
+                exit();
+            }
+        }
+        if (!$excel) {
+            $excel = self::generateDefaultSampleFile($class);
+        }
+
+        $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+
+        header('Content-type: application/vnd.ms-excel');
+        header('Content-Disposition: attachment; filename="'.$fileName.'"');
+        ob_clean();
+        $writer->save('php://output');
+        exit();
+    }
+
+    public static function generateDefaultSampleFile($class)
+    {
         $excel = new PHPExcel();
         $sheet = $excel->getActiveSheet();
 
@@ -50,16 +78,7 @@ class ExcelImportExport
             $sheet->setCellValueByColumnAndRow($col, $row, $header);
             $col++;
         }
-
-        $fileName = "sample-file-for-$class.xlsx";
-
-        $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
-
-        header('Content-type: application/vnd.ms-excel');
-        header('Content-Disposition: attachment; filename="'.$fileName.'"');
-        ob_clean();
-        $writer->save('php://output');
-        exit();
+        return $excel;
     }
 
     public static function getValidExtensionsText()
