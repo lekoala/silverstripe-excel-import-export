@@ -33,6 +33,26 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
     protected $exportName = null;
 
     /**
+     *
+     * @var string
+     */
+    protected $buttonTitle = null;
+
+    /**
+     *
+     * @var bool
+     */
+    protected $checkCanView = true;
+
+    /**
+     *
+     * @var array
+     */
+    protected $listFilters      = array();
+    protected static $instances = 0;
+    protected $instance;
+
+    /**
      * @param string $targetFragment The HTML fragment to write the button into
      * @param array $exportColumns The columns to include in the export
      */
@@ -40,6 +60,13 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
     {
         $this->targetFragment = $targetFragment;
         $this->exportColumns  = $exportColumns;
+        self::$instances++;
+        $this->instance       = self::$instances;
+    }
+
+    public function getActionName()
+    {
+        return 'excelexport_'.$this->instance;
     }
 
     /**
@@ -47,14 +74,18 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
      */
     public function getHTMLFragments($gridField)
     {
+        $title = $this->buttonTitle ? $this->buttonTitle : _t('TableListField.XLSEXPORT',
+                'Export to Excel');
+
+        $name = $this->getActionName();
+
         $button = new GridField_FormAction(
-            $gridField, 'excelexport',
-            _t('TableListField.XLSEXPORT', 'Export to Excel'), 'excelexport',
-            null
+            $gridField, $name, $title, $name, null
         );
         $button->setAttribute('data-icon', 'download-excel');
         $button->addExtraClass('no-ajax action_export');
         $button->setForm($gridField->getForm());
+
         return array(
             $this->targetFragment => '<p class="grid-excel-button">'.$button->Field().'</p>',
         );
@@ -65,13 +96,13 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
      */
     public function getActions($gridField)
     {
-        return array('excelexport');
+        return array($this->getActionName());
     }
 
     public function handleAction(GridField $gridField, $actionName, $arguments,
                                  $data)
     {
-        if ($actionName == 'excelexport') {
+        if (in_array($actionName, $this->getActions($gridField))) {
             return $this->handleExport($gridField);
         }
     }
@@ -81,9 +112,7 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
      */
     public function getURLHandlers($gridField)
     {
-        return array(
-            'excelexport' => 'handleExport',
-        );
+        return array($this->getActionName() => 'handleExport');
     }
 
     /**
@@ -143,10 +172,10 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
             $this->exportName = $filter->filter('export-'.$plural);
         }
 
-        $excel = new PHPExcel();
+        $excel           = new PHPExcel();
         $excelProperties = $excel->getProperties();
         $excelProperties->setTitle($this->exportName);
-        
+
         $sheet = $excel->getActiveSheet();
         if ($plural) {
             $sheet->setTitle($plural);
@@ -183,7 +212,7 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
         try {
             $cellIterator->setIterateOnlyExistingCells(true);
         } catch (Exception $ex) {
-            continue;
+            // Ignore exceptions
         }
         foreach ($cellIterator as $cell) {
             $sheet->getColumnDimension($cell->getColumn())->setAutoSize(true);
@@ -201,8 +230,13 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
             }
         }
 
-        foreach ($items->limit(null) as $item) {
-            if (!$item->hasMethod('canView') || $item->canView()) {
+        $list = $items->limit(null);
+        if (!empty($this->listFilters)) {
+            $list = $list->filter($this->listFilters);
+        }
+
+        foreach ($list as $item) {
+            if (!$this->checkCanView || !$item->hasMethod('canView') || $item->canView()) {
                 foreach ($columns as $columnSource => $columnHeader) {
                     if (!is_string($columnHeader) && is_callable($columnHeader)) {
                         if ($item->hasMethod($columnSource)) {
@@ -221,8 +255,6 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
                                 $columnHeader);
                         }
                     }
-
-                    $value = str_replace(array("\r", "\n"), "\n", $value);
 
                     $sheet->setCellValueByColumnAndRow($col, $row, $value);
                     $col++;
@@ -306,6 +338,64 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
     public function setExportName($exportName)
     {
         $this->exportName = $exportName;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getButtonTitle()
+    {
+        return $this->buttonTitle;
+    }
+
+    /**
+     * @param string $buttonTitle
+     * @return \ExcelGridFieldExportButton
+     */
+    public function setButtonTitle($buttonTitle)
+    {
+        $this->buttonTitle = $buttonTitle;
+        return $this;
+    }
+
+    /**
+     *
+     * @return bool
+     */
+    public function getCheckCanView()
+    {
+        return $this->checkCanView;
+    }
+
+    /**
+     *
+     * @param bool $checkCanView
+     * @return \ExcelGridFieldExportButton
+     */
+    public function setCheckCanView($checkCanView)
+    {
+        $this->checkCanView = $checkCanView;
+        return $this;
+    }
+
+    /**
+     *
+     * @return array
+     */
+    public function getListFilters()
+    {
+        return $this->listFilters;
+    }
+
+    /**
+     *
+     * @param array $listFilters
+     * @return \ExcelGridFieldExportButton
+     */
+    public function setListFilters($listFilters)
+    {
+        $this->listFilters = $listFilters;
         return $this;
     }
 }

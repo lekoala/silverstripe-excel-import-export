@@ -47,7 +47,7 @@ class ModelAdminExcelExtension extends Extension
             $config->removeComponentsByType('GridFieldExportButton');
         }
         if ($classConfig->export_excel) {
-            $config->addComponent(new ExcelGridFieldExportButton('buttons-before-left'));
+            $config->addComponent($excel = new ExcelGridFieldExportButton('buttons-before-left'));
         }
     }
 
