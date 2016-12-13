@@ -49,7 +49,23 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
      * @var array
      */
     protected $listFilters      = array();
+
+    /**
+     *
+     * @var callable
+     */
+    protected $afterExportCallback;
+
+    /**
+     * Static instance counter to allow multiple instances to work together
+     * @var int
+     */
     protected static $instances = 0;
+
+    /**
+     * Current instance count
+     * @var int
+     */
     protected $instance;
 
     /**
@@ -138,6 +154,11 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
                     break;
                 default:
                     throw new Exception("$ext is not supported");
+            }
+
+            if($this->afterExportCallback) {
+                $func = $this->afterExportCallback;
+                $func();
             }
 
             header('Content-type: application/vnd.ms-excel');
@@ -398,4 +419,26 @@ class ExcelGridFieldExportButton implements GridField_HTMLProvider, GridField_Ac
         $this->listFilters = $listFilters;
         return $this;
     }
+
+    /**
+     *
+     * @return callable
+     */
+    public function getAfterExportCallback()
+    {
+        return $this->afterExportCallback;
+    }
+
+    /**
+     *
+     * @param callable $afterExportCallback
+     * @return \ExcelGridFieldExportButton
+     */
+    public function setAfterExportCallback(callable $afterExportCallback)
+    {
+        $this->afterExportCallback = $afterExportCallback;
+        return $this;
+    }
+
+
 }
