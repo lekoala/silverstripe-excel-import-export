@@ -90,42 +90,43 @@ class ExcelBulkLoader extends BulkLoader
 
     protected function getReaderType($ext)
     {
-        $extensionType = null;
+        $readerType = null;
         switch (strtolower($ext)) {
             case 'xlsx':   //	Excel (OfficeOpenXML) Spreadsheet
             case 'xlsm':   //	Excel (OfficeOpenXML) Macro Spreadsheet (macros will be discarded)
             case 'xltx':   //	Excel (OfficeOpenXML) Template
             case 'xltm':   //	Excel (OfficeOpenXML) Macro Template (macros will be discarded)
-                $extensionType = 'Excel2007';
+                $readerType = 'Excel2007';
                 break;
             case 'xls':    //	Excel (BIFF) Spreadsheet
             case 'xlt':    //	Excel (BIFF) Template
-                $extensionType = 'Excel5';
+                $readerType = 'Excel5';
                 break;
             case 'ods':    //	Open/Libre Offic Calc
             case 'ots':    //	Open/Libre Offic Calc Template
-                $extensionType = 'OOCalc';
+                $readerType = 'OOCalc';
                 break;
             case 'slk':
-                $extensionType = 'SYLK';
+                $readerType = 'SYLK';
                 break;
             case 'xml':    //	Excel 2003 SpreadSheetML
-                $extensionType = 'Excel2003XML';
+                $readerType = 'Excel2003XML';
                 break;
             case 'gnumeric':
-                $extensionType = 'Gnumeric';
+                $readerType = 'Gnumeric';
                 break;
             case 'htm':
             case 'html':
-                $extensionType = 'HTML';
+                $readerType = 'HTML';
                 break;
             case 'csv':
+                $readerType = 'CSV';
                 break;
             default:
-                break;
+                throw new Exception("Unsupported extension: $ext");
         }
 
-        return $extensionType;
+        return $readerType;
     }
 
     protected function getUploadFileExtension()
@@ -155,9 +156,15 @@ class ExcelBulkLoader extends BulkLoader
         $results = new BulkLoader_Result();
         $ext     = $this->getUploadFileExtension();
 
-        $reader = PHPExcel_IOFactory::createReader($this->getReaderType($ext));
+        $readerType = $this->getReaderType($ext);
+        $reader     = PHPExcel_IOFactory::createReader($readerType);
         $reader->setReadDataOnly(true);
-        $data   = array();
+        if ($readerType == 'CSV') {
+            /* @var $reader PHPExcel_Reader_CSV */
+            $reader->setDelimiter($this->delimiter);
+            $reader->setEnclosure($this->enclosure);
+        }
+        $data = array();
         if ($reader->canRead($filepath)) {
             $excel = $reader->load($filepath);
             $data  = $excel->getActiveSheet()->toArray(null, true, false, false);
