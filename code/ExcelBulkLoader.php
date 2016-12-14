@@ -182,7 +182,8 @@ class ExcelBulkLoader extends BulkLoader
 
         $headersCount = count($headers);
 
-        $this->db = Config::inst()->get($this->objectClass, 'db');
+        $this->db        = Config::inst()->get($this->objectClass, 'db');
+        $this->singleton = singleton($this->objectClass);
 
         foreach ($data as $row) {
             $row = $this->mergeRowWithHeaders($row, $headers, $headersCount);
@@ -194,8 +195,6 @@ class ExcelBulkLoader extends BulkLoader
     }
 
     /**
-     * @todo Better messages for relation checks and duplicate detection
-     * Note that columnMap isn't used.
      *
      * @param array $record
      * @param array $columnMap
@@ -207,12 +206,13 @@ class ExcelBulkLoader extends BulkLoader
     protected function processRecord($record, $columnMap, &$results,
                                      $preview = false, $makeRelations = false)
     {
-        $class           = $this->objectClass;
-        $this->singleton = singleton($class);
+        $class = $this->objectClass;
 
         // find existing object, or create new one
         $existingObj = $this->findExistingObject($record, $columnMap);
-        $obj         = ($existingObj) ? $existingObj : new $class();
+
+        /* @var $obj DataObject */
+        $obj = $existingObj ? $existingObj : new $class();
 
         // first run: find/create any relations and store them on the object
         // we can't combine runs, as other columns might rely on the relation being present
@@ -275,19 +275,25 @@ class ExcelBulkLoader extends BulkLoader
             }
 
             // look up the mapping to see if this needs to map to callback
-            $mapped = $this->columnMap && isset($this->columnMap[$fieldName]);
+            $mapping = ($columnMap && isset($columnMap[$fieldName])) ? $columnMap[$fieldName]
+                    : null;
 
-            if ($mapped && strpos($this->columnMap[$fieldName], '->') === 0) {
-                $funcName = substr($this->columnMap[$fieldName], 2);
+            // Mapping that starts with -> map to a method
+            if ($mapping && strpos($mapping, '->') === 0) {
+                $funcName = substr($mapping, 2);
 
                 $this->$funcName($obj, $val, $record);
-            } else if ($obj->hasMethod("import{$fieldName}")) {
+            }
+            // Try to call import_myFieldName
+            else if ($obj->hasMethod("import{$fieldName}")) {
                 $obj->{"import{$fieldName}"}($val, $record);
             } else {
-                // Basic value mapping if needed
+                // Map column to field
+                $usedName = $mapping ? $mapping : $fieldName;
 
-                if (isset($db[$fieldName])) {
-                    switch ($db[$fieldName]) {
+                // Basic value mapping based on datatype if needed
+                if (isset($db[$usedName])) {
+                    switch ($db[$usedName]) {
                         case 'Boolean':
                             if ($val == 'yes') {
                                 $val = true;
@@ -297,7 +303,7 @@ class ExcelBulkLoader extends BulkLoader
                     }
                 }
 
-                $obj->update(array($fieldName => $val));
+                $obj->update(array($usedName => $val));
             }
         }
 
@@ -330,10 +336,11 @@ class ExcelBulkLoader extends BulkLoader
      * specified via {@link self::$duplicateChecks}.
      *
      * @param array $record CSV data column
+     * @param array $columnMap
      *
      * @return mixed
      */
-    public function findExistingObject($record)
+    public function findExistingObject($record, $columnMap)
     {
         $SNG_objectClass = $this->singleton;
 
@@ -345,7 +352,7 @@ class ExcelBulkLoader extends BulkLoader
                 if (empty($record[$duplicateCheck])) continue;
 
                 $existingRecord = DataObject::get($this->objectClass)
-                    ->filter($duplicateCheck, $record[$duplicateCheck])
+                    ->filter($fieldName, $record[$duplicateCheck])
                     ->first();
 
                 if ($existingRecord) return $existingRecord;
