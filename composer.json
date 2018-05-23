@@ -19,9 +19,9 @@
     ],
     "require": {
         "php": ">=5.6",
-        "silverstripe/framework": "^4.x",
-        "silverstripe/siteconfig": "^4.x",
-        "silverstripe/admin": "^1.x",
+        "silverstripe/framework": "^4",
+        "silverstripe/siteconfig": "^4",
+        "silverstripe/admin": "^1",
         "phpoffice/phpspreadsheet": "^1.2"
     },
     "extra": {
