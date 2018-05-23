@@ -1,19 +1,21 @@
-SilverStripe Excel Import Export module
-==================
-Replace all csv import/export functionnalities by Excel. Excel support is provided
-by PHPExcel.
+# SilverStripe Excel Import Export module
+
+[![Build Status](https://travis-ci.org/lekoala/silverstripe-excel-import-export.svg?branch=master)](https://travis-ci.org/lekoala/silverstripe-excel-import-export/)
+[![scrutinizer](https://scrutinizer-ci.com/g/lekoala/silverstripe-excel-import-export/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-excel-import-export/)
+[![Code coverage](https://codecov.io/gh/lekoala/silverstripe-excel-import-export/branch/master/graph/badge.svg)](https://codecov.io/gh/lekoala/silverstripe-excel-import-export)
+
+## Intro
+
+Replace all csv import/export functionnalities by Excel.
+Excel support is provided by PHPSpreadsheet.
 
 These changes apply automatically to SecurityAdmin and ModelAdmin through extension.
 
-Side functionnalities:
+To make import easier, import specs are replaced by a sample file that is ready to use for the user.
 
-- It will enable bulk manager if class exists on the GridField
-- Import specs are replaced by a sample file that is easier to use for clients
+## Configure exported fields
 
-Configure exported fields
-==================
-
-All fields are exported by default (not just summaryFields that are useless by themselves)
+All fields are exported by default (not just summary fields that are useless by themselves)
 
 If you want to restrict the fields, you can either:
 
@@ -21,22 +23,21 @@ If you want to restrict the fields, you can either:
 - Define a exported_fields config field on your model that will restrict the list to these fields
 - Define a unexported_fields config field on your model that will blacklist these fields from being exported
 
-Other modules out there
-==================
+## Migrate your old code
 
-[Silverstripe Excel Export](https://github.com/firebrandhq/excel-export)
-Focus more on the export side of things and support RestfulServer module
+Previous version was using PHPExcel. This version use PHPSpreadhsheet. Any code using PHPExcel should
+be migrated.
+You can find the following guide helpful: https://phpspreadsheet.readthedocs.io/en/develop/topics/migration-from-PHPExcel/
 
-[Silverstripe PHPExcel](https://github.com/axyr/silverstripe-phpexcel)
-If you just need the export button
+## Todo
 
-[SilverStripe Import/Export](https://github.com/burnbright/silverstripe-importexport)
-With a very nice user column mapping
+- More tests and refactoring
+- Allow using another engine like Spout
 
-Compatibility
-==================
-Tested with 3.x
+## Compatibility
 
-Maintainer
-==================
+Tested with 4.1
+
+## Maintainer
+
 LeKoala - thomas@lekoala.be

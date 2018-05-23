@@ -18,9 +18,11 @@
         }
     ],
     "require": {
-        "php": ">=5.4.8",
-        "silverstripe/framework": "~3.1",
-        "phpoffice/phpexcel": "1.8.1"
+        "php": ">=5.6",
+        "silverstripe/framework": "^4.x",
+        "silverstripe/siteconfig": "^4.x",
+        "silverstripe/admin": "^1.x",
+        "phpoffice/phpspreadsheet": "^1.2"
     },
     "extra": {
         "installer-name": "excel-import-export"

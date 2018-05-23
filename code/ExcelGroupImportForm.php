@@ -1,5 +1,16 @@
 <?php
 
+namespace LeKoala\ExcelImportExport;
+
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\FileField;
+use SilverStripe\Forms\FormAction;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Forms\RequiredFields;
+use SilverStripe\Admin\GroupImportForm;
+use SilverStripe\Security\GroupCsvBulkLoader;
+use LeKoala\ExcelImportExport\ExcelGroupBulkLoader;
+
 /**
  * Improved group import form
  *
@@ -7,60 +18,57 @@
  */
 class ExcelGroupImportForm extends GroupImportForm
 {
+    public function __construct(
+        $controller,
+        $name,
+        $fields = null,
+        $actions = null,
+        $validator = null
+    ) {
+        $downloadSampleLink = $controller->Link('downloadsample/Group');
+        $downloadSample = '<a href="'.$downloadSampleLink.'" class="no-ajax" target="_blank">' . _t(
+            'ExcelImportExport.DownloadSample',
+            'Download sample file'
+        ) . '</a>';
 
-    public function __construct($controller, $name, $fields = null,
-                                $actions = null, $validator = null)
-    {
-        if (!$fields) {
-            $helpHtml = _t(
-                'ExcelGroupImportForm.Help1',
-                '<p><a href="{link}">Download sample file</a></p>',
-                array('link' => $controller->Link('downloadsample/Group'))
-            );
-            $helpHtml .= _t(
-                'ExcelGroupImportForm.Help2',
-                '<ul>'
-                .'<li>Existing groups are matched by their unique <em>Code</em> value, and updated with any new values from the '
-                .'imported file</li>'
-                .'<li>Group hierarchies can be created by using a <em>ParentCode</em> column.</li>'
-                .'<li>Permission codes can be assigned by the <em>PermissionCode</em> column. Existing permission codes are not '
-                .'cleared.</li>'
-                .'</ul>'
-            );
+        $helpHtml = '';
+        $helpHtml .= '<ul>';
+        $helpHtml .= '<li>' . _t(
+            'ExcelImportExport.GroupImportHelp1',
+            'For supported columns, please check the sample file.'
+        ) . ' ' . $downloadSample . '</li>';
+        $helpHtml .= '<li>' . _t(
+            'ExcelImportExport.GroupImportHelp2',
+            'Existing groups are matched by their unique <em>Code</em> value, and updated with any new values from the imported file.'
+        ) . '</li>';
+        $helpHtml .= '<li>' . _t(
+            'ExcelImportExport.GroupImportHelp3',
+            'Group hierarchies can be created by using a <em>ParentCode</em> column.'
+        ) . '</li>';
+        $helpHtml .= '<li>' . _t(
+            'ExcelImportExport.GroupImportHelp4',
+            'Permission codes can be assigned by the <em>PermissionCode</em> column. Existing permission codes are not cleared.'
+        ) . '</li>';
+        $helpHtml .= '</ul>';
 
-            $importer   = new GroupCsvBulkLoader();
-            $importSpec = $importer->getImportSpec();
-            $helpHtml   = sprintf($helpHtml,
-                implode(', ', array_keys($importSpec['fields'])));
+        $file = new FileField('File');
+        $csvDescription = ExcelImportExport::getValidExtensionsText();
+        $file->setDescription($csvDescription);
+        $file->getValidator()->setAllowedExtensions(ExcelImportExport::getValidExtensions());
 
-            $extensions = array('csv', 'xls', 'xlsx', 'ods', 'txt');
-            $fields     = new FieldList(
-                new LiteralField('Help', $helpHtml),
-                $fileField  = new FileField(
-                'File',
-                _t(
-                    'ExcelGroupImportForm.FileFieldLabel',
-                    'File <small><br/>(allowed extensions: {extensions})</small>',
-                    array('extensions' => implode(', ', $extensions))
-                )
-                )
-            );
-            $fileField->getValidator()->setAllowedExtensions(array('csv'));
-        }
+        $fields    = new FieldList(
+            new LiteralField('Help', $helpHtml),
+            $file
+        );
 
-        if (!$actions) {
-            $action  = new FormAction('doImport',
-                _t('ExcelGroupImportForm.BtnImport', 'Import from file'));
-            $action->addExtraClass('ss-ui-button');
-            $actions = new FieldList($action);
-        }
-
-        if (!$validator) $validator = new RequiredFields('File');
+        $action  = new FormAction(
+            'doImport',
+            _t('ExcelImportExport.BtnImport', 'Import from file')
+        );
+        $action->addExtraClass('btn-primary');
+        $actions = new FieldList($action);
 
         parent::__construct($controller, $name, $fields, $actions, $validator);
-
-        $this->addExtraClass('cms');
-        $this->addExtraClass('import-form');
     }
 
     public function doImport($data, $form)
@@ -72,23 +80,31 @@ class ExcelGroupImportForm extends GroupImportForm
 
         // result message
         $msgArr   = array();
-        if ($result->CreatedCount())
-                $msgArr[] = _t(
-                'ExcelGroupImportForm.ResultCreated', 'Created {count} groups',
+        if ($result->CreatedCount()) {
+            $msgArr[] = _t(
+                'ExcelImportExport.ResultCreated',
+                'Created {count} groups',
                 array('count' => $result->CreatedCount())
             );
-        if ($result->UpdatedCount())
-                $msgArr[] = _t(
-                'ExcelGroupImportForm.ResultUpdated', 'Updated %d groups',
+        }
+        if ($result->UpdatedCount()) {
+            $msgArr[] = _t(
+                'ExcelImportExport.ResultUpdated',
+                'Updated %d groups',
                 array('count' => $result->UpdatedCount())
             );
-        if ($result->DeletedCount())
-                $msgArr[] = _t(
-                'ExcelGroupImportForm.ResultDeleted', 'Deleted %d groups',
+        }
+        if ($result->DeletedCount()) {
+            $msgArr[] = _t(
+                'ExcelImportExport.ResultDeleted',
+                'Deleted %d groups',
                 array('count' => $result->DeletedCount())
             );
-        $msg      = ($msgArr) ? implode(',', $msgArr) : _t('ExcelGroupImportForm.ResultNone',
-                'No changes');
+        }
+        $msg = ($msgArr) ? implode(',', $msgArr) : _t(
+            'ExcelImportExport.ResultNone',
+            'No changes'
+        );
 
         $this->sessionMessage($msg, 'good');
 

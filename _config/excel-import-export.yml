@@ -2,22 +2,36 @@
 Name: excel-import-export
 After:
   - 'framework/*'
-  - 'cms/*'
 ---
-ModelAdmin:
+LeKoala\ExcelImportExport\ExcelImportExport:
+  default_writer: 'Xlsx'
+  allowed_extensions:
+    - csv
+    - ods
+    - xlsx
+    - xls
+    - txt
+SilverStripe\Admin\ModelAdmin:
   export_csv: false
   export_excel: true
-  bulk_manage: false
   extensions:
-    - ModelAdminExcelExtension
-SecurityAdmin:
+    - LeKoala\ExcelImportExport\Extensions\ModelAdminExcelExtension
+SilverStripe\Admin\SecurityAdmin:
   export_csv: false
   export_excel: true
-  bulk_manage: true
   allow_import: true
   extensions:
-    - SecurityAdminExcelExtension
-Member:
+    - LeKoala\ExcelImportExport\Extensions\SecurityAdminExcelExtension
+SilverStripe\Security\Member:
+  unimported_fields:
+    - TempIDHash
+    - TempIDExpired
+    - RememberLoginToken
+    - AutoLoginHash
+    - AutoLoginExpired
+    - PasswordExpiry
+    - FailedLoginCount
+    - LockedOutUntil
   unexported_fields:
     - TempIDHash
     - TempIDExpired

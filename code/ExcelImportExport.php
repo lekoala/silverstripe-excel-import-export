@@ -1,5 +1,14 @@
 <?php
 
+namespace LeKoala\ExcelImportExport;
+
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Core\Config\Config;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use SilverStripe\Core\Config\Configurable;
+
 /**
  * Support class for the module
  *
@@ -7,18 +16,32 @@
  */
 class ExcelImportExport
 {
+    use Configurable;
 
+    /**
+     * Get all db fields for a given dataobject class
+     *
+     * @param string $class
+     * @return array
+     */
     public static function allFieldsForClass($class)
     {
         $dataClasses = ClassInfo::dataClassesFor($class);
         $fields      = array();
+        $dataObjectSchema = DataObject::getSchema();
         foreach ($dataClasses as $dataClass) {
-            $fields = array_merge($fields,
-                array_keys(DataObject::database_fields($dataClass)));
+            $dataFields = $dataObjectSchema->databaseFields($class);
+            $fields = array_merge($fields, array_keys($dataFields));
         }
         return array_combine($fields, $fields);
     }
 
+    /**
+     * Get fields that should be exported by default for a class
+     *
+     * @param string $class
+     * @return array
+     */
     public static function exportFieldsForClass($class)
     {
         $singl = singleton($class);
@@ -39,57 +62,181 @@ class ExcelImportExport
         return array_combine($exportedFields, $exportedFields);
     }
 
+    /**
+     * Get fields that can be imported by default for a class
+     *
+     * @param string $class
+     * @return array
+     */
+    public static function importFieldsForClass($class)
+    {
+        $singl = singleton($class);
+        if ($singl->hasMethod('importedFields')) {
+            return $singl->importedFields();
+        }
+        $importedFields = Config::inst()->get($class, 'imported_fields');
+
+        if (!$importedFields) {
+            $importedFields = array_keys(self::allFieldsForClass($class));
+        }
+
+        $unimportedFields = Config::inst()->get($class, 'unimported_Fields');
+
+        if ($unimportedFields) {
+            $importedFields = array_diff($importedFields, $unimportedFields);
+        }
+        return array_combine($importedFields, $importedFields);
+    }
+
+    /**
+     * Output a sample file for a class
+     *
+     * A custom file can be provided with a custom sampleExcelFile method
+     * either as a file path or as a Excel instance
+     *
+     * @param string $class
+     * @return void
+     */
     public static function sampleFileForClass($class)
     {
         $fileName = "sample-file-for-$class.xlsx";
-        $excel    = null;
+        $spreadsheet    = null;
 
         $sng = singleton($class);
         if ($sng->hasMethod('sampleExcelFile')) {
-            $excel = $sng->sampleExcelFile();
-            if (is_string($excel) && is_file($excel)) {
-                header('Content-type: application/vnd.ms-excel');
-                header('Content-Disposition: attachment; filename="'.$fileName.'"');
-                readfile($excel);
+            $spreadsheet = $sng->sampleExcelFile();
+
+            // We have a file, output directly
+            if (is_string($spreadsheet) && is_file($spreadsheet)) {
+                self::outputHeaders($fileName);
+                readfile($spreadsheet);
                 exit();
             }
         }
-        if (!$excel) {
-            $excel = self::generateDefaultSampleFile($class);
+        if (!$spreadsheet) {
+            $spreadsheet = self::generateDefaultSampleFile($class);
         }
 
-        $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
-
-        header('Content-type: application/vnd.ms-excel');
-        header('Content-Disposition: attachment; filename="'.$fileName.'"');
-        ob_clean();
+        $writer = self::getDefaultWriter($spreadsheet);
+        self::outputHeaders($fileName);
         $writer->save('php://output');
         exit();
     }
 
+    public static function getDefaultWriter($spreadsheet)
+    {
+        return IOFactory::createWriter($spreadsheet, self::config()->default_writer);
+    }
+
+    /**
+     * Output excel headers
+     *
+     * @param string $fileName
+     * @return void
+     */
+    public static function outputHeaders($fileName)
+    {
+        $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+        switch ($ext) {
+            case 'xlsx':
+                header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                break;
+            default:
+                header('Content-type: application/vnd.ms-excel');
+                break;
+        }
+
+        header('Content-Disposition: attachment; filename="'.$fileName.'"');
+        header('Cache-Control: max-age=0');
+        ob_clean();
+    }
+
+    /**
+     * Generate a default import file with all field name
+     *
+     * @param string $class
+     * @return Spreadsheet
+     */
     public static function generateDefaultSampleFile($class)
     {
-        $excel = new PHPExcel();
-        $sheet = $excel->getActiveSheet();
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->getProperties()
+            ->setCreator('SilverStripe')
+            ->setTitle("Sample file for $class")
+        ;
+        $sheet = $spreadsheet->getActiveSheet();
 
         $row = 1;
-        $col = 0;
-        foreach (ExcelImportExport::allFieldsForClass($class) as $header) {
+        $col = 1;
+        $allFields = ExcelImportExport::importFieldsForClass($class);
+        foreach ($allFields as $header) {
             $sheet->setCellValueByColumnAndRow($col, $row, $header);
             $col++;
         }
-        return $excel;
+        return $spreadsheet;
     }
 
+    /**
+     * Show valid extensions helper (for uploaders)
+     *
+     * @return string
+     */
     public static function getValidExtensionsText()
     {
-        return _t('ExcelImportExport.VALIDEXTENSIONS',
+        return _t(
+            'ExcelImportExport.VALIDEXTENSIONS',
             "Allowed extensions: {extensions}",
-            array('extensions' => implode(', ', self::getValidExtensions())));
+            array('extensions' => implode(', ', self::getValidExtensions()))
+        );
     }
 
+    /**
+     * Extracted from PHPSpreadhseet
+     *
+     * @param string $ext
+     * @return string
+     */
+    public static function getReaderForExtension($ext)
+    {
+        switch (strtolower($ext)) {
+            case 'xlsx': // Excel (OfficeOpenXML) Spreadsheet
+            case 'xlsm': // Excel (OfficeOpenXML) Macro Spreadsheet (macros will be discarded)
+            case 'xltx': // Excel (OfficeOpenXML) Template
+            case 'xltm': // Excel (OfficeOpenXML) Macro Template (macros will be discarded)
+                return 'Xlsx';
+            case 'xls': // Excel (BIFF) Spreadsheet
+            case 'xlt': // Excel (BIFF) Template
+                return 'Xls';
+            case 'ods': // Open/Libre Offic Calc
+            case 'ots': // Open/Libre Offic Calc Template
+                return 'Ods';
+            case 'slk':
+                return 'Slk';
+            case 'xml': // Excel 2003 SpreadSheetML
+                return 'Xml';
+            case 'gnumeric':
+                return 'Gnumeric';
+            case 'htm':
+            case 'html':
+                return 'Html';
+            case 'csv':
+                return 'Csv';
+            default:
+                throw new Exception("Unsupported file type : $ext");
+        }
+    }
+
+    /**
+     * Get valid extensions
+     *
+     * @return array
+     */
     public static function getValidExtensions()
     {
-        return array('csv', 'ods', 'xlsx', 'xls', 'txt');
+        $v = self::config()->allowed_extensions;
+        if (!$v || !is_array($v)) {
+            return [];
+        }
+        return $v;
     }
 }
