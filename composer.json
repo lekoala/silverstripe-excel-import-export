@@ -28,6 +28,10 @@
     "support": {
         "issues": "https://github.com/lekoala/silverstripe-excel-import-export/issues"
     },
+    "scripts": {
+        "lint": "phpcs code/ tests/",
+        "lint-clean": "phpcbf code/ tests/"
+    },
     "minimum-stability": "dev",
     "prefer-stable": true
 }
