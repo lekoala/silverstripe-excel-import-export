@@ -30,7 +30,8 @@
     },
     "scripts": {
         "lint": "phpcs code/ tests/",
-        "lint-clean": "phpcbf code/ tests/"
+        "lint-clean": "phpcbf code/ tests/",
+        "test": "phpunit -v"
     },
     "minimum-stability": "dev",
     "prefer-stable": true
