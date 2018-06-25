@@ -1,15 +1,18 @@
 <?php
 namespace LeKoala\ExcelImportExport;
 
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use SilverStripe\Assets\FileNameFilter;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use SilverStripe\Forms\GridField\GridField;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use SilverStripe\Forms\GridField\GridFieldPaginator;
 use SilverStripe\Forms\GridField\GridField_FormAction;
 use SilverStripe\Forms\GridField\GridField_URLHandler;
+use SilverStripe\Forms\GridField\GridFieldFilterHeader;
 use SilverStripe\Forms\GridField\GridField_HTMLProvider;
+use SilverStripe\Forms\GridField\GridFieldSortableHeader;
 use SilverStripe\Forms\GridField\GridField_ActionProvider;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
  * Adds an "Export list" button to the bottom of a {@link GridField}.
@@ -230,7 +233,7 @@ class ExcelGridFieldExportButton implements
             // source name as the header instead
             foreach ($columns as $columnSource => $columnHeader) {
                 $headers[] = (!is_string($columnHeader) && is_callable($columnHeader))
-                ? $columnSource : $columnHeader;
+                    ? $columnSource : $columnHeader;
             }
 
             foreach ($headers as $header) {
@@ -242,7 +245,7 @@ class ExcelGridFieldExportButton implements
             $sheet->setAutoFilter("A1:{$endcol}1");
             $sheet->getStyle("A1:{$endcol}1")->getFont()->setBold(true);
 
-            $col = 0;
+            $col = 1;
             $row++;
         }
 
@@ -258,7 +261,7 @@ class ExcelGridFieldExportButton implements
         }
 
         //Remove GridFieldPaginator as we're going to export the entire list.
-        $gridField->getConfig()->removeComponentsByType('GridFieldPaginator');
+        $gridField->getConfig()->removeComponentsByType(GridFieldPaginator::class);
 
         $items = $gridField->getManipulatedList();
 
@@ -298,7 +301,7 @@ class ExcelGridFieldExportButton implements
                 $item->destroy();
             }
 
-            $col = 0;
+            $col = 1;
             $row++;
         }
 
