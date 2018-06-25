@@ -11,14 +11,12 @@
         "cms"
     ],
     "license": "MIT",
-    "authors": [
-        {
-            "name": "LeKoala",
-            "email": "thomas@lekoala.be"
-        }
-    ],
+    "authors": [{
+        "name": "LeKoala",
+        "email": "thomas@lekoala.be"
+    }],
     "require": {
-        "php": ">=5.6",
+        "php": ">=7",
         "silverstripe/framework": "^4",
         "silverstripe/siteconfig": "^4",
         "silverstripe/admin": "^1",
@@ -29,5 +27,12 @@
     },
     "support": {
         "issues": "https://github.com/lekoala/silverstripe-excel-import-export/issues"
-    }
+    },
+    "scripts": {
+        "lint": "phpcs code/ tests/",
+        "lint-clean": "phpcbf code/ tests/",
+        "test": "phpunit -v"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
