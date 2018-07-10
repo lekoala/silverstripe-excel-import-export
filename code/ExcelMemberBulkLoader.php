@@ -38,7 +38,8 @@ class ExcelMemberBulkLoader extends ExcelBulkLoader
         $record,
         $columnMap,
         &$results,
-        $preview = false
+        $preview = false,
+        $makeRelations = false
     ) {
         $objID = parent::processRecord($record, $columnMap, $results, $preview);
 

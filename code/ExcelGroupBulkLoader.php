@@ -31,7 +31,8 @@ class ExcelGroupBulkLoader extends ExcelBulkLoader
         $record,
         $columnMap,
         &$results,
-        $preview = false
+        $preview = false,
+        $makeRelations = false
     ) {
         // We match by 'Code', the ID property is confusing the importer
         if (isset($record['ID'])) {
