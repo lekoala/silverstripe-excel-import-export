@@ -82,7 +82,7 @@ class ExcelBulkLoader extends BulkLoader
         }
         if (is_array($filepath)) {
             $this->uploadFile = $filepath;
-            $filepath         = $filepath['tmp_name'];
+            $filepath = $filepath['tmp_name'];
         }
 
         // upload is resource intensive
@@ -133,10 +133,10 @@ class ExcelBulkLoader extends BulkLoader
     protected function processAll($filepath, $preview = false)
     {
         $results = new BulkLoader_Result();
-        $ext     = $this->getUploadFileExtension();
+        $ext = $this->getUploadFileExtension();
 
         $readerType = ExcelImportExport::getReaderForExtension($ext);
-        $reader     = IOFactory::createReader($readerType);
+        $reader = IOFactory::createReader($readerType);
         $reader->setReadDataOnly(true);
         if ($readerType == 'Csv') {
             /* @var $reader \PhpOffice\PhpSpreadsheet\Writer\Csv */
@@ -147,7 +147,7 @@ class ExcelBulkLoader extends BulkLoader
         $data = array();
         if ($reader->canRead($filepath)) {
             $excel = $reader->load($filepath);
-            $data  = $excel->getActiveSheet()->toArray(null, true, false, false);
+            $data = $excel->getActiveSheet()->toArray(null, true, false, false);
         } else {
             throw new Exception("Cannot read $filepath");
         }
@@ -164,12 +164,12 @@ class ExcelBulkLoader extends BulkLoader
 
         $objectClass = $this->objectClass;
         $objectConfig = $objectClass::config();
-        $this->db        = $objectConfig->db;
+        $this->db = $objectConfig->db;
         $this->singleton = singleton($objectClass);
 
         foreach ($data as $row) {
             $row = $this->mergeRowWithHeaders($row, $headers, $headersCount);
-            $id  = $this->processRecord(
+            $id = $this->processRecord(
                 $row,
                 $this->columnMap,
                 $results,
@@ -233,7 +233,7 @@ class ExcelBulkLoader extends BulkLoader
                     }
                     if (!$relationObj || !$relationObj->exists()) {
                         $relationClass = $obj->hasOneComponent($relationName);
-                        $relationObj   = new $relationClass();
+                        $relationObj = new $relationClass();
                         //write if we aren't previewing
                         if (!$preview) {
                             $relationObj->write();
@@ -249,7 +249,7 @@ class ExcelBulkLoader extends BulkLoader
                     // we have a relation column with dot notation
                     list($relationName, $columnName) = explode('.', $fieldName);
                     // always gives us an component (either empty or existing)
-                    $relationObj                = $obj->getComponent($relationName);
+                    $relationObj = $obj->getComponent($relationName);
                     if (!$preview) {
                         $relationObj->write();
                     }
@@ -276,21 +276,21 @@ class ExcelBulkLoader extends BulkLoader
             }
 
             // Do not update ID if any exist
-            if ($fieldName == 'ID' &&  $obj->ID) {
+            if ($fieldName == 'ID' && $obj->ID) {
                 continue;
             }
 
             // look up the mapping to see if this needs to map to callback
             $mapping = ($columnMap && isset($columnMap[$fieldName])) ? $columnMap[$fieldName]
-                    : null;
+                : null;
 
             // Mapping that starts with -> map to a method
             if ($mapping && strpos($mapping, '->') === 0) {
                 $funcName = substr($mapping, 2);
 
                 $this->$funcName($obj, $val, $record);
-            } // Try to call import_myFieldName
-            elseif ($obj->hasMethod("import{$fieldName}")) {
+            } elseif ($obj->hasMethod("import{$fieldName}")) {
+                // Try to call import_myFieldName
                 $obj->{"import{$fieldName}"}($val, $record);
             } else {
                 // Map column to field
@@ -379,7 +379,7 @@ class ExcelBulkLoader extends BulkLoader
                 } else {
                     user_error(
                         "CsvBulkLoader::processRecord():"
-                        ." {$duplicateCheck['callback']} not found on importer or object class.",
+                            . " {$duplicateCheck['callback']} not found on importer or object class.",
                         E_USER_ERROR
                     );
                 }
