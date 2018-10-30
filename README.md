@@ -6,7 +6,7 @@
 
 ## Intro
 
-Replace all csv import/export functionnalities by Excel.
+Replace all csv import/export functionalities by Excel.
 Excel support is provided by PHPSpreadsheet.
 
 These changes apply automatically to SecurityAdmin and ModelAdmin through extension.
