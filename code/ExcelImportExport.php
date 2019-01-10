@@ -59,7 +59,16 @@ class ExcelImportExport
         if ($unexportedFields) {
             $exportedFields = array_diff($exportedFields, $unexportedFields);
         }
-        return array_combine($exportedFields, $exportedFields);
+        
+        $fields = [];
+        foreach ($exportedFields as $key => $value) {
+            if (is_int($key)) {
+                $key = $value;
+            }
+            $fields[$key] = $value;
+        }
+
+        return $fields;
     }
 
     /**
