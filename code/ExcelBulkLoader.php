@@ -7,6 +7,7 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Environment;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use SilverStripe\Dev\BulkLoader_Result;
+use Exception;
 
 /**
  * Use PHPSpreadsheet to expand BulkLoader file format support
@@ -169,7 +170,7 @@ class ExcelBulkLoader extends BulkLoader
 
         foreach ($data as $row) {
             $row = $this->mergeRowWithHeaders($row, $headers, $headersCount);
-            $id = $this->processRecord(
+            $this->processRecord(
                 $row,
                 $this->columnMap,
                 $results,
@@ -207,7 +208,6 @@ class ExcelBulkLoader extends BulkLoader
         // first run: find/create any relations and store them on the object
         // we can't combine runs, as other columns might rely on the relation being present
         if ($makeRelations) {
-            $relations = array();
             foreach ($record as $fieldName => $val) {
                 // don't bother querying of value is not set
                 if ($this->isNullValue($val)) {
@@ -247,7 +247,7 @@ class ExcelBulkLoader extends BulkLoader
                     }
                 } elseif (strpos($fieldName, '.') !== false) {
                     // we have a relation column with dot notation
-                    list($relationName, $columnName) = explode('.', $fieldName);
+                    list($relationName) = explode('.', $fieldName);
                     // always gives us an component (either empty or existing)
                     $relationObj = $obj->getComponent($relationName);
                     if (!$preview) {
@@ -313,7 +313,6 @@ class ExcelBulkLoader extends BulkLoader
         }
 
         // write record
-        $id = ($preview) ? 0 : $obj->write();
 
         // @todo better message support
         $message = '';

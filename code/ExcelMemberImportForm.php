@@ -6,11 +6,7 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FileField;
 use SilverStripe\Forms\FormAction;
 use SilverStripe\Forms\LiteralField;
-use SilverStripe\Forms\RequiredFields;
 use SilverStripe\Admin\MemberImportForm;
-use SilverStripe\Security\MemberCsvBulkLoader;
-use LeKoala\ExcelImportExport\ExcelImportExport;
-use LeKoala\ExcelImportExport\ExcelMemberBulkLoader;
 
 /**
  * Import members from excel

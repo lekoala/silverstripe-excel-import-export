@@ -2,9 +2,9 @@
 
 namespace LeKoala\ExcelImportExport;
 
+use SilverStripe\Core\Convert;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Group;
-use LeKoala\ExcelImportExport\ExcelBulkLoader;
 use SilverStripe\Security\Member;
 
 /**
@@ -34,7 +34,7 @@ class ExcelMemberBulkLoader extends ExcelBulkLoader
         parent::__construct($objectClass);
     }
 
-    public function processRecord(
+    protected function processRecord(
         $record,
         $columnMap,
         &$results,

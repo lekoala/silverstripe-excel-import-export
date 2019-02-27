@@ -13,6 +13,7 @@ use SilverStripe\Forms\GridField\GridFieldFilterHeader;
 use SilverStripe\Forms\GridField\GridField_HTMLProvider;
 use SilverStripe\Forms\GridField\GridFieldSortableHeader;
 use SilverStripe\Forms\GridField\GridField_ActionProvider;
+use Exception;
 
 /**
  * Adds an "Export list" button to the bottom of a {@link GridField}.
@@ -200,11 +201,9 @@ class ExcelGridFieldExportButton implements
     {
         $class = $gridField->getModelClass();
         $columns = ($this->exportColumns) ? $this->exportColumns : ExcelImportExport::exportFieldsForClass($class);
-        $fileData = '';
 
         $singl = singleton($class);
 
-        $singular = $class ? $singl->i18n_singular_name() : '';
         $plural = $class ? $singl->i18n_plural_name() : '';
 
         $filter = new FileNameFilter;
