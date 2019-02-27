@@ -4,11 +4,8 @@ namespace LeKoala\ExcelImportExport\Extensions;
 
 use SilverStripe\Forms\Form;
 use SilverStripe\Core\Extension;
-use SilverStripe\Core\Config\Config;
-use SilverStripe\Forms\LiteralField;
 use LeKoala\ExcelImportExport\ExcelBulkLoader;
 use LeKoala\ExcelImportExport\ExcelImportExport;
-use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldExportButton;
 use SilverStripe\Forms\GridField\GridFieldImportButton;
 use LeKoala\ExcelImportExport\ExcelGridFieldExportButton;
@@ -39,7 +36,6 @@ class ModelAdminExcelExtension extends Extension
     {
         /* @var $owner ModelAdmin */
         $owner = $this->owner;
-        $class = $owner->modelClass;
         $config = $this->owner->config();
 
         // Overwrite model imports
@@ -47,7 +43,7 @@ class ModelAdminExcelExtension extends Extension
 
         if (is_null($importerClasses)) {
             $models = $owner->getManagedModels();
-            foreach ($models as $modelName => $options) {
+            foreach (array_keys($models) as $modelName) {
                 $importerClasses[$modelName] = ExcelBulkLoader::class;
             }
 

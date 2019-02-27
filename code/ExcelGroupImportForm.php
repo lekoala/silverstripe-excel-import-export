@@ -6,10 +6,7 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FileField;
 use SilverStripe\Forms\FormAction;
 use SilverStripe\Forms\LiteralField;
-use SilverStripe\Forms\RequiredFields;
 use SilverStripe\Admin\GroupImportForm;
-use SilverStripe\Security\GroupCsvBulkLoader;
-use LeKoala\ExcelImportExport\ExcelGroupBulkLoader;
 
 /**
  * Improved group import form

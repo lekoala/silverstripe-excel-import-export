@@ -8,6 +8,7 @@ use SilverStripe\Core\Config\Config;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use SilverStripe\Core\Config\Configurable;
+use Exception;
 
 /**
  * Support class for the module
@@ -30,7 +31,7 @@ class ExcelImportExport
         $fields      = array();
         $dataObjectSchema = DataObject::getSchema();
         foreach ($dataClasses as $dataClass) {
-            $dataFields = $dataObjectSchema->databaseFields($class);
+            $dataFields = $dataObjectSchema->databaseFields($dataClass);
             $fields = array_merge($fields, array_keys($dataFields));
         }
         return array_combine($fields, $fields);

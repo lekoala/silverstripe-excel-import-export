@@ -5,7 +5,6 @@ namespace LeKoala\ExcelImportExport;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Permission;
-use LeKoala\ExcelImportExport\ExcelBulkLoader;
 
 /**
  * The same as GroupBulkLoader but with ExcelBulkLoader as base class
@@ -27,7 +26,7 @@ class ExcelGroupBulkLoader extends ExcelBulkLoader
         parent::__construct($objectClass);
     }
 
-    public function processRecord(
+    protected function processRecord(
         $record,
         $columnMap,
         &$results,
