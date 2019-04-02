@@ -313,6 +313,9 @@ class ExcelBulkLoader extends BulkLoader
         }
 
         // write record
+        if (!$preview) {
+            $obj->write();
+        }
 
         // @todo better message support
         $message = '';

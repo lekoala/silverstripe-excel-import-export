@@ -115,7 +115,7 @@ class ModelAdminExcelExtension extends Extension
 
         $fields = $form->Fields();
 
-        $downloadSampleLink = $owner->Link($class.'/downloadsample');
+        $downloadSampleLink = $owner->Link(str_replace('\\', '-', $class) . '/downloadsample');
         $downloadSample = '<a href="'.$downloadSampleLink.'" class="no-ajax" target="_blank">' . _t(
             'ExcelImportExport.DownloadSample',
             'Download sample file'
