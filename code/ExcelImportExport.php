@@ -60,7 +60,7 @@ class ExcelImportExport
         if ($unexportedFields) {
             $exportedFields = array_diff($exportedFields, $unexportedFields);
         }
-        
+
         $fields = [];
         foreach ($exportedFields as $key => $value) {
             if (is_int($key)) {
@@ -156,7 +156,7 @@ class ExcelImportExport
                 break;
         }
 
-        header('Content-Disposition: attachment; filename="'.$fileName.'"');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
         header('Cache-Control: max-age=0');
         ob_clean();
     }
@@ -172,8 +172,7 @@ class ExcelImportExport
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getProperties()
             ->setCreator('SilverStripe')
-            ->setTitle("Sample file for $class")
-        ;
+            ->setTitle("Sample file for $class");
         $sheet = $spreadsheet->getActiveSheet();
 
         $row = 1;
@@ -248,5 +247,35 @@ class ExcelImportExport
             return [];
         }
         return $v;
+    }
+
+    /**
+     * Convert a file to an array
+     *
+     * @param string $filepath
+     * @param string $delimiter (csv only)
+     * @param string $enclosure (csv only)
+     * @return array
+     */
+    public static function fileToArray($filepath, $delimiter = ';', $enclosure = '')
+    {
+        $ext = pathinfo($filepath, PATHINFO_EXTENSION);
+        $readerType = self::getReaderForExtension($ext);
+        $reader = IOFactory::createReader($readerType);
+        $reader->setReadDataOnly(true);
+        if ($readerType == 'Csv') {
+            /* @var $reader \PhpOffice\PhpSpreadsheet\Writer\Csv */
+            // @link https://phpspreadsheet.readthedocs.io/en/latest/topics/reading-and-writing-to-file/#setting-csv-options_1
+            $reader->setDelimiter($delimiter);
+            $reader->setEnclosure($enclosure);
+        }
+        $data = array();
+        if ($reader->canRead($filepath)) {
+            $excel = $reader->load($filepath);
+            $data = $excel->getActiveSheet()->toArray(null, true, false, false);
+        } else {
+            throw new Exception("Cannot read $filepath");
+        }
+        return $data;
     }
 }

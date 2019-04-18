@@ -141,7 +141,7 @@ class ExcelBulkLoader extends BulkLoader
         $reader->setReadDataOnly(true);
         if ($readerType == 'Csv') {
             /* @var $reader \PhpOffice\PhpSpreadsheet\Writer\Csv */
-            // @link https://phpspreadsheet.readthedocs.io/en/develop/topics/reading-and-writing-to-file/#setting-csv-options_1
+            // @link https://phpspreadsheet.readthedocs.io/en/latest/topics/reading-and-writing-to-file/#setting-csv-options_1
             $reader->setDelimiter($this->delimiter);
             $reader->setEnclosure($this->enclosure);
         }

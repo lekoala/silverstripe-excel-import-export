@@ -23,7 +23,7 @@ class ExcelGroupImportForm extends GroupImportForm
         $validator = null
     ) {
         $downloadSampleLink = $controller->Link('downloadsample/Group');
-        $downloadSample = '<a href="'.$downloadSampleLink.'" class="no-ajax" target="_blank">' . _t(
+        $downloadSample = '<a href="' . $downloadSampleLink . '" class="no-ajax" target="_blank">' . _t(
             'ExcelImportExport.DownloadSample',
             'Download sample file'
         ) . '</a>';
@@ -53,17 +53,20 @@ class ExcelGroupImportForm extends GroupImportForm
         $file->setDescription($csvDescription);
         $file->getValidator()->setAllowedExtensions(ExcelImportExport::getValidExtensions());
 
-        $fields    = new FieldList(
-            new LiteralField('Help', $helpHtml),
+        $helpField = new LiteralField('Help', $helpHtml);
+        $fields = new FieldList([
+            $helpField,
             $file
-        );
+        ]);
 
         $action  = new FormAction(
             'doImport',
             _t('ExcelImportExport.BtnImport', 'Import from file')
         );
         $action->addExtraClass('btn-primary');
-        $actions = new FieldList($action);
+        $actions = new FieldList([
+            $action
+        ]);
 
         parent::__construct($controller, $name, $fields, $actions, $validator);
     }
