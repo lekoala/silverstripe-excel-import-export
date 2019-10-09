@@ -195,7 +195,7 @@ class ExcelGridFieldExportButton implements
      * Generate export fields for Excel.
      *
      * @param GridField $gridField
-     * @return PHPExcel
+     * @return Spreadsheet
      */
     public function generateExportFileData($gridField)
     {
