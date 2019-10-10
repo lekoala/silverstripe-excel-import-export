@@ -30,7 +30,7 @@ before_script:
   # Install composer dependencies
   - composer validate
   - echo $INSTALLER_VERSION
-  - composer require --prefer-source --no-update silverstripe/recipe-cms:1.1.x-dev
+  - composer require --prefer-source --no-update silverstripe/recipe-cms:4.x-dev
   - if [[ $DB == PGSQL ]]; then composer require --no-update silverstripe/postgresql:2.0.x-dev; fi
   - composer install --prefer-source --no-interaction --no-progress --no-suggest --optimize-autoloader --verbose --profile
   - vendor/bin/sake flush=all
