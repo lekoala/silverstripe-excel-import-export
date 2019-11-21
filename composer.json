@@ -1,7 +1,7 @@
 {
     "name": "lekoala/silverstripe-excel-import-export",
     "description": "Replace CSV with Excel in SilverStripe",
-    "type": "silverstripe-module",
+    "type": "silverstripe-vendormodule",
     "keywords": [
         "silverstripe",
         "excel",
