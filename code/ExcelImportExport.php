@@ -262,17 +262,115 @@ class ExcelImportExport
         $ext = pathinfo($filepath, PATHINFO_EXTENSION);
         $readerType = self::getReaderForExtension($ext);
         $reader = IOFactory::createReader($readerType);
-        $reader->setReadDataOnly(true);
         if ($readerType == 'Csv') {
             /* @var $reader \PhpOffice\PhpSpreadsheet\Writer\Csv */
             // @link https://phpspreadsheet.readthedocs.io/en/latest/topics/reading-and-writing-to-file/#setting-csv-options_1
             $reader->setDelimiter($delimiter);
             $reader->setEnclosure($enclosure);
+        } else {
+            // Does not apply to CSV
+            $reader->setReadDataOnly(true);
         }
         $data = array();
         if ($reader->canRead($filepath)) {
             $excel = $reader->load($filepath);
             $data = $excel->getActiveSheet()->toArray(null, true, false, false);
+        } else {
+            throw new Exception("Cannot read $filepath");
+        }
+        return $data;
+    }
+
+    /**
+     * Convert an excel file to an array
+     *
+     * @param string $filepath
+     * @param string $sheetname Load a specific worksheet by name
+     * @param true $onlyExisting Avoid reading empty columns
+     * @return array
+     */
+    public static function excelToArray($filepath, $sheetname = null, $onlyExisting = true)
+    {
+        $ext = pathinfo($filepath, PATHINFO_EXTENSION);
+        $readerType = self::getReaderForExtension($ext);
+        $reader = IOFactory::createReader($readerType);
+        $reader->setReadDataOnly(true);
+        if ($sheetname) {
+            $reader->setLoadSheetsOnly($sheetname);
+        }
+        $data = array();
+        if ($reader->canRead($filepath)) {
+            $excel = $reader->load($filepath);
+            if ($onlyExisting) {
+                $data = [];
+                foreach ($excel->getActiveSheet()->getRowIterator() as $row) {
+                    $cellIterator = $row->getCellIterator();
+                    $cellIterator->setIterateOnlyExistingCells(true);
+                    $cells = [];
+                    foreach ($cellIterator as $cell) {
+                        $cells[] = $cell->getFormattedValue();
+                    }
+                    $data[] = $cells;
+                }
+            } else {
+                $data = $excel->getActiveSheet()->toArray(null, true, false, false);
+            }
+        } else {
+            throw new Exception("Cannot read $filepath");
+        }
+        return $data;
+    }
+
+    /**
+     * Convert an excel file to an associative array
+     *
+     * Suppose the first line are the headers of the file
+     *
+     * @param string $filepath
+     * @param string $sheetname Load a specific worksheet by name
+     * @return array
+     */
+    public static function excelToAssocArray($filepath, $sheetname = null)
+    {
+        $ext = pathinfo($filepath, PATHINFO_EXTENSION);
+        $readerType = self::getReaderForExtension($ext);
+        $reader = IOFactory::createReader($readerType);
+        $reader->setReadDataOnly(true);
+        if ($sheetname) {
+            $reader->setLoadSheetsOnly($sheetname);
+        }
+        $data = array();
+        if ($reader->canRead($filepath)) {
+            $excel = $reader->load($filepath);
+            $data = [];
+            $headers = [];
+            $headersCount = 0;
+            foreach ($excel->getActiveSheet()->getRowIterator() as $row) {
+                $cellIterator = $row->getCellIterator();
+                $cellIterator->setIterateOnlyExistingCells(true);
+                $cells = [];
+                foreach ($cellIterator as $cell) {
+                    $cells[] = $cell->getFormattedValue();
+                }
+                if (empty($headers)) {
+                    $headers = $cells;
+                    $headersCount = count($headers);
+                } else {
+                    $diff = count($cells) - $headersCount;
+                    if ($diff != 0) {
+                        if ($diff > 0) {
+                            // we have too many cells
+                            $cells = array_slice($cells, 0, $headersCount);
+                        } else {
+                            // we are missing some cells
+                            for ($i = 0; $i < abs($diff); $i++) {
+                                $cells[] = null;
+                            }
+                        }
+                    }
+                    $data[] = array_combine($headers, $cells);
+                }
+            }
         } else {
             throw new Exception("Cannot read $filepath");
         }
