@@ -325,6 +325,7 @@ class ExcelImportExport
      * Convert an excel file to an associative array
      *
      * Suppose the first line are the headers of the file
+     * Headers are trimmed in case you have crappy whitespace in your files
      *
      * @param string $filepath
      * @param string $sheetname Load a specific worksheet by name
@@ -354,6 +355,7 @@ class ExcelImportExport
                 }
                 if (empty($headers)) {
                     $headers = $cells;
+                    array_filter($headers, 'trim');
                     $headersCount = count($headers);
                 } else {
                     $diff = count($cells) - $headersCount;
