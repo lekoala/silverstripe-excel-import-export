@@ -355,7 +355,10 @@ class ExcelImportExport
                 }
                 if (empty($headers)) {
                     $headers = $cells;
-                    array_filter($headers, 'trim');
+                    $headers = array_map(function ($v) {
+                        // trim does not always work great
+                        return is_string($v) ? preg_replace('/(^\s+)|(\s+$)/us', '', $v) : $v;
+                    }, $headers);
                     $headersCount = count($headers);
                 } else {
                     $diff = count($cells) - $headersCount;
