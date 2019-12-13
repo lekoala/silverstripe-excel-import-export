@@ -256,6 +256,51 @@ class ExcelImportExport
     }
 
     /**
+     * Save content of an array to a file
+     *
+     * @param array $data
+     * @param string $filepath
+     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     * @return void
+     */
+    public static function arrayToFile($data, $filepath)
+    {
+        $spreadsheet = new Spreadsheet;
+        $spreadsheet->setActiveSheetIndex(0);
+        $spreadsheet->getActiveSheet()->fromArray($data);
+
+        $ext = pathinfo($filepath, PATHINFO_EXTENSION);
+
+        // Writer is the same as read : Csv, Xlsx...
+        $writerType = self::getReaderForExtension($ext);
+        $writer = IOFactory::createWriter($spreadsheet, $writerType);
+        $writer->save($filepath);
+    }
+
+    /**
+     * Fast saving to csv
+     *
+     * @param array $data
+     * @param string $filepath
+     * @param string $delimiter
+     * @param string $enclosure
+     * @param string $escapeChar
+     */
+    public static function arrayToCsv($data, $filepath, $delimiter = ',', $enclosure = '"', $escapeChar = '\\')
+    {
+        if (is_file($filepath)) {
+            unlink($filepath);
+        }
+        $fp = fopen($filepath, 'w');
+        // UTF 8 fix
+        fprintf($fp, "\xEF\xBB\xBF");
+        foreach ($data as $row) {
+            fputcsv($fp, $row, $delimiter, $enclosure, $escapeChar);
+        }
+        return fclose($fp);
+    }
+
+    /**
      * Convert a file to an array
      *
      * @param string $filepath
