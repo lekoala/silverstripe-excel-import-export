@@ -20,6 +20,12 @@ class ExcelImportExport
     use Configurable;
 
     /**
+     * You may want to disable this if you get "No cells exist within the specified range"
+     * @var bool
+     */
+    public static $iterate_only_existing_cells = true;
+
+    /**
      * Get all db fields for a given dataobject class
      *
      * @param string $class
@@ -305,7 +311,9 @@ class ExcelImportExport
                 $data = [];
                 foreach ($excel->getActiveSheet()->getRowIterator() as $row) {
                     $cellIterator = $row->getCellIterator();
-                    $cellIterator->setIterateOnlyExistingCells(true);
+                    if (self::$iterate_only_existing_cells) {
+                        $cellIterator->setIterateOnlyExistingCells(true);
+                    }
                     $cells = [];
                     foreach ($cellIterator as $cell) {
                         $cells[] = $cell->getFormattedValue();
@@ -348,7 +356,9 @@ class ExcelImportExport
             $headersCount = 0;
             foreach ($excel->getActiveSheet()->getRowIterator() as $row) {
                 $cellIterator = $row->getCellIterator();
-                $cellIterator->setIterateOnlyExistingCells(true);
+                if (self::$iterate_only_existing_cells) {
+                    $cellIterator->setIterateOnlyExistingCells(true);
+                }
                 $cells = [];
                 foreach ($cellIterator as $cell) {
                     $cells[] = $cell->getFormattedValue();
