@@ -11,6 +11,7 @@ use SilverStripe\Security\Permission;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Core\Config\Config_ForClass;
 use LeKoala\ExcelImportExport\ExcelImportExport;
+use SilverStripe\Forms\GridField\GridFieldConfig;
 use LeKoala\ExcelImportExport\ExcelGroupImportForm;
 use LeKoala\ExcelImportExport\ExcelMemberImportForm;
 use SilverStripe\Forms\GridField\GridFieldExportButton;
@@ -118,7 +119,7 @@ class SecurityAdminExcelExtension extends Extension
         // Better export
         if ($classConfig->export_csv) {
             /* @var $export GridFieldExportButton */
-            $export = $config->getComponentByType(GridFieldExportButton::class);
+            $export = $this->getGridFieldExportButton($config);
             $export->setExportColumns(ExcelImportExport::exportFieldsForClass($class));
         } else {
             $config->removeComponentsByType(GridFieldExportButton::class);
@@ -127,6 +128,15 @@ class SecurityAdminExcelExtension extends Extension
             $ExcelGridFieldExportButton = new ExcelGridFieldExportButton('buttons-before-left');
             $config->addComponent($ExcelGridFieldExportButton);
         }
+    }
+
+    /**
+     * @param GridFieldConfig $config
+     * @return GridFieldExportButton
+     */
+    protected function getGridFieldExportButton($config)
+    {
+        return $config->getComponentByType(GridFieldExportButton::class);
     }
 
     /**
@@ -185,7 +195,7 @@ class SecurityAdminExcelExtension extends Extension
 
         return $this->owner->renderWith(
             'BlankPage',
-            array('Form' => $this->ExcelGroupImportForm()->forTemplate(), 'Content' => ' ' )
+            array('Form' => $this->ExcelGroupImportForm()->forTemplate(), 'Content' => ' ')
         );
     }
 }

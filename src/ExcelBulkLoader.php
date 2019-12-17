@@ -64,7 +64,7 @@ class ExcelBulkLoader extends BulkLoader
     protected $fileType = 'xlsx';
 
     /**
-     * @inheritDoc
+     * @return BulkLoader_Result
      */
     public function preview($filepath)
     {

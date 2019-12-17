@@ -23,7 +23,7 @@ class ExcelMemberImportForm extends MemberImportForm
         $validator = null
     ) {
         $downloadSampleLink = $controller->Link('downloadsample/Member');
-        $downloadSample = '<a href="'.$downloadSampleLink.'" class="no-ajax" target="_blank">' . _t(
+        $downloadSample = '<a href="' . $downloadSampleLink . '" class="no-ajax" target="_blank">' . _t(
             'ExcelImportExport.DownloadSample',
             'Download sample file'
         ) . '</a>';

@@ -4,6 +4,8 @@ namespace LeKoala\ExcelImportExport\Extensions;
 
 use SilverStripe\Forms\Form;
 use SilverStripe\Core\Extension;
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldConfig;
 use LeKoala\ExcelImportExport\ExcelBulkLoader;
 use LeKoala\ExcelImportExport\ExcelImportExport;
 use SilverStripe\Forms\GridField\GridFieldExportButton;
@@ -84,8 +86,7 @@ class ModelAdminExcelExtension extends Extension
 
         // Handle export buttons
         if ($classConfig->export_csv) {
-            /* @var $export GridFieldExportButton */
-            $GridFieldExportButton = $config->getComponentByType(GridFieldExportButton::class);
+            $GridFieldExportButton = $this->getGridFieldExportButton($config);
             $GridFieldExportButton->setExportColumns(ExcelImportExport::exportFieldsForClass($class));
         } else {
             $config->removeComponentsByType(GridFieldExportButton::class);
@@ -105,6 +106,15 @@ class ModelAdminExcelExtension extends Extension
         }
     }
 
+    /**
+     * @param GridFieldConfig $config
+     * @return GridFieldExportButton
+     */
+    protected function getGridFieldExportButton($config)
+    {
+        return $config->getComponentByType(GridFieldExportButton::class);
+    }
+
     public function updateImportForm(Form $form)
     {
         /* @var $owner ModelAdmin */
@@ -116,7 +126,7 @@ class ModelAdminExcelExtension extends Extension
         $fields = $form->Fields();
 
         $downloadSampleLink = $owner->Link(str_replace('\\', '-', $class) . '/downloadsample');
-        $downloadSample = '<a href="'.$downloadSampleLink.'" class="no-ajax" target="_blank">' . _t(
+        $downloadSample = '<a href="' . $downloadSampleLink . '" class="no-ajax" target="_blank">' . _t(
             'ExcelImportExport.DownloadSample',
             'Download sample file'
         ) . '</a>';

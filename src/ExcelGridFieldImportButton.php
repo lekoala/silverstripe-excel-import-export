@@ -1,8 +1,10 @@
 <?php
+
 namespace LeKoala\ExcelImportExport;
 
 use SilverStripe\View\SSViewer;
 use SilverStripe\View\ArrayData;
+use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridField_FormAction;
 use SilverStripe\Forms\GridField\GridFieldImportButton;
 
@@ -12,11 +14,11 @@ use SilverStripe\Forms\GridField\GridFieldImportButton;
 class ExcelGridFieldImportButton extends GridFieldImportButton
 {
     /**
-    * We need to override the getHTMLFragments to allow changing the title
-    *
-    * @param GridField $gridField
-    * @return array
-    */
+     * We need to override the getHTMLFragments to allow changing the title
+     *
+     * @param GridField $gridField
+     * @return array
+     */
     public function getHTMLFragments($gridField)
     {
         $modalID = $gridField->ID() . '_ImportModal';

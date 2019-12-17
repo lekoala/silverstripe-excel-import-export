@@ -2,13 +2,15 @@
 
 namespace LeKoala\ExcelImportExport;
 
+use Exception;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Config\Config;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use SilverStripe\Core\Config\Configurable;
-use Exception;
+use PhpOffice\PhpSpreadsheet\Reader\IReader;
 
 /**
  * Support class for the module
@@ -300,6 +302,16 @@ class ExcelImportExport
         return fclose($fp);
     }
 
+
+    /**
+     * @param IReader $reader
+     * @return Csv
+     */
+    protected function getCsvReader(IReader $reader)
+    {
+        return $reader;
+    }
+
     /**
      * Convert a file to an array
      *
@@ -314,8 +326,8 @@ class ExcelImportExport
         $readerType = self::getReaderForExtension($ext);
         $reader = IOFactory::createReader($readerType);
         if ($readerType == 'Csv') {
-            /* @var $reader \PhpOffice\PhpSpreadsheet\Writer\Csv */
             // @link https://phpspreadsheet.readthedocs.io/en/latest/topics/reading-and-writing-to-file/#setting-csv-options_1
+            $reader = $this->getCsvReader($reader);
             $reader->setDelimiter($delimiter);
             $reader->setEnclosure($enclosure);
         } else {

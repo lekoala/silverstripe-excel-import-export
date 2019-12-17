@@ -1,4 +1,5 @@
 <?php
+
 namespace LeKoala\ExcelImportExport;
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -14,6 +15,7 @@ use SilverStripe\Forms\GridField\GridField_HTMLProvider;
 use SilverStripe\Forms\GridField\GridFieldSortableHeader;
 use SilverStripe\Forms\GridField\GridField_ActionProvider;
 use Exception;
+use SilverStripe\ORM\DataList;
 
 /**
  * Adds an "Export list" button to the bottom of a {@link GridField}.
@@ -271,7 +273,9 @@ class ExcelGridFieldExportButton implements
             }
         }
 
-        $list = $items->limit(null);
+        if ($items instanceof DataList) {
+            $list = $items->limit(null);
+        }
         if (!empty($this->listFilters)) {
             $list = $list->filter($this->listFilters);
         }
@@ -368,7 +372,7 @@ class ExcelGridFieldExportButton implements
 
     /**
      * @param string $exportName
-     * @return \ExcelGridFieldExportButton
+     * @return ExcelGridFieldExportButton
      */
     public function setExportName($exportName)
     {
@@ -386,7 +390,7 @@ class ExcelGridFieldExportButton implements
 
     /**
      * @param string $buttonTitle
-     * @return \ExcelGridFieldExportButton
+     * @return ExcelGridFieldExportButton
      */
     public function setButtonTitle($buttonTitle)
     {
@@ -406,7 +410,7 @@ class ExcelGridFieldExportButton implements
     /**
      *
      * @param bool $checkCanView
-     * @return \ExcelGridFieldExportButton
+     * @return ExcelGridFieldExportButton
      */
     public function setCheckCanView($checkCanView)
     {
@@ -426,7 +430,7 @@ class ExcelGridFieldExportButton implements
     /**
      *
      * @param array $listFilters
-     * @return \ExcelGridFieldExportButton
+     * @return ExcelGridFieldExportButton
      */
     public function setListFilters($listFilters)
     {
@@ -446,7 +450,7 @@ class ExcelGridFieldExportButton implements
     /**
      *
      * @param callable $afterExportCallback
-     * @return \ExcelGridFieldExportButton
+     * @return ExcelGridFieldExportButton
      */
     public function setAfterExportCallback(callable $afterExportCallback)
     {
