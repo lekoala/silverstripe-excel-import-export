@@ -2,12 +2,14 @@
 
 namespace LeKoala\ExcelImportExport;
 
+use Exception;
 use SilverStripe\Dev\BulkLoader;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Environment;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use SilverStripe\Dev\BulkLoader_Result;
-use Exception;
+use PhpOffice\PhpSpreadsheet\Reader\Csv;
+use PhpOffice\PhpSpreadsheet\Reader\IReader;
 
 /**
  * Use PHPSpreadsheet to expand BulkLoader file format support
@@ -115,7 +117,7 @@ class ExcelBulkLoader extends BulkLoader
      * @param array $row
      * @param array $headers
      * @param int $headersCount (optional) Limit to a specifc number of headers
-     * @return void
+     * @return array
      */
     protected function mergeRowWithHeaders($row, $headers, $headersCount = null)
     {
@@ -125,6 +127,15 @@ class ExcelBulkLoader extends BulkLoader
         $row = array_slice($row, 0, $headersCount);
         $row = array_combine($headers, $row);
         return $row;
+    }
+
+    /**
+     * @param IReader $reader
+     * @return Csv
+     */
+    protected function getCsvReader(IReader $reader)
+    {
+        return $reader;
     }
 
     /**
@@ -140,8 +151,8 @@ class ExcelBulkLoader extends BulkLoader
         $reader = IOFactory::createReader($readerType);
         $reader->setReadDataOnly(true);
         if ($readerType == 'Csv') {
-            /* @var $reader \PhpOffice\PhpSpreadsheet\Writer\Csv */
             // @link https://phpspreadsheet.readthedocs.io/en/latest/topics/reading-and-writing-to-file/#setting-csv-options_1
+            $reader = $this->getCsvReader($reader);
             $reader->setDelimiter($this->delimiter);
             $reader->setEnclosure($this->enclosure);
         }
