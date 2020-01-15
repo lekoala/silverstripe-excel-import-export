@@ -11,6 +11,7 @@ use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use SilverStripe\Core\Config\Configurable;
 use PhpOffice\PhpSpreadsheet\Reader\IReader;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 /**
  * Support class for the module
@@ -22,10 +23,16 @@ class ExcelImportExport
     use Configurable;
 
     /**
-     * You may want to disable this if you get "No cells exist within the specified range"
+     * You boolean want to disable this if you get "No cells exist within the specified range"
      * @var bool
      */
     public static $iterate_only_existing_cells = true;
+
+    /**
+     * Some excel sheets need extra processing
+     * @var boolean
+     */
+    public static $process_headers = false;
 
     /**
      * Get all db fields for a given dataobject class
@@ -422,10 +429,17 @@ class ExcelImportExport
                 }
                 if (empty($headers)) {
                     $headers = $cells;
-                    $headers = array_map(function ($v) {
-                        // trim does not always work great
-                        return is_string($v) ? preg_replace('/(^\s+)|(\s+$)/us', '', $v) : $v;
-                    }, $headers);
+                    // Some crappy excel file may need this
+                    if (self::$process_headers) {
+                        $headers = array_map(function ($v) {
+                            // Numeric headers are most of the time dates
+                            if (is_numeric($v)) {
+                                $v = date('Y-m-d', Date::excelToTimestamp($v));
+                            }
+                            // trim does not always work great and headers can contain utf8 stuff
+                            return is_string($v) ? preg_replace('/(^\s+)|(\s+$)/us', '', $v) : $v;
+                        }, $headers);
+                    }
                     $headersCount = count($headers);
                 } else {
                     $diff = count($cells) - $headersCount;
