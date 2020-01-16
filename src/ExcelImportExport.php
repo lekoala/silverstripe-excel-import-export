@@ -35,6 +35,11 @@ class ExcelImportExport
     public static $process_headers = false;
 
     /**
+     * @var string
+     */
+    public static $default_tmp_reader = 'Xlsx';
+
+    /**
      * Get all db fields for a given dataobject class
      *
      * @param string $class
@@ -245,6 +250,8 @@ class ExcelImportExport
                 return 'Html';
             case 'csv':
                 return 'Csv';
+            case 'tmp': // Useful when importing uploaded files
+                return self::$default_tmp_reader;
             default:
                 throw new Exception("Unsupported file type : $ext");
         }
