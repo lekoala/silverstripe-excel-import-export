@@ -1,5 +1,9 @@
 <?php
 
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+
 /**
  * Adds an "Export list" button to the bottom of a {@link GridField}.
  */
@@ -157,298 +161,294 @@ class ExcelGridFieldExportButton implements
 
             switch ($ext) {
                 case 'xls':
-                    $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
+                    $writer = IOFactory::createWriter($excel, 'Xls');
                     break;
                 case 'xlsx';
-                $writer = PHPExcel_IOFactory::createWriter(
-                    $excel,
-                    'Excel2007'
-                );
-                break;
-            default:
-                throw new Exception("$ext is not supported");
+                    $writer = IOFactory::createWriter($excel, 'Xlsx');
+                    break;
+                default:
+                    throw new Exception("$ext is not supported");
+            }
+
+            if ($this->afterExportCallback) {
+                $func = $this->afterExportCallback;
+                $func();
+            }
+
+            header('Content-type: application/vnd.ms-excel');
+            header('Content-Disposition: attachment; filename="' . $fileName . '"');
+
+            $writer->save('php://output');
+            exit();
+        }
+        die('No data');
+    }
+
+    /**
+     * Generate export fields for Excel.
+     *
+     * @param GridField $gridField
+     * @return Spreadsheet
+     */
+    public function generateExportFileData($gridField)
+    {
+        $class = $gridField->getModelClass();
+        $columns = ($this->exportColumns) ? $this->exportColumns : ExcelImportExport::exportFieldsForClass($class);
+        $fileData = '';
+
+        $singl = singleton($class);
+
+        $singular = $class ? $singl->i18n_singular_name() : '';
+        $plural = $class ? $singl->i18n_plural_name() : '';
+
+        $filter = new FileNameFilter;
+        if ($this->exportName) {
+            $this->exportName = $filter->filter($this->exportName);
+        } else {
+            $this->exportName = $filter->filter('export-' . $plural);
         }
 
-        if ($this->afterExportCallback) {
-            $func = $this->afterExportCallback;
-            $func();
+        $excel = new Spreadsheet();
+        $excelProperties = $excel->getProperties();
+        $excelProperties->setTitle($this->exportName);
+
+        $sheet = $excel->getActiveSheet();
+        if ($plural) {
+            $sheet->setTitle($plural);
         }
 
-        header('Content-type: application/vnd.ms-excel');
-        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        $row = 1;
+        $col = 1;
 
-        $writer->save('php://output');
-        exit();
-    }
-}
-
-/**
- * Generate export fields for Excel.
- *
- * @param GridField $gridField
- * @return PHPExcel
- */
-public function generateExportFileData($gridField)
-{
-    $class = $gridField->getModelClass();
-    $columns = ($this->exportColumns) ? $this->exportColumns : ExcelImportExport::exportFieldsForClass($class);
-    $fileData = '';
-
-    $singl = singleton($class);
-
-    $singular = $class ? $singl->i18n_singular_name() : '';
-    $plural = $class ? $singl->i18n_plural_name() : '';
-
-    $filter = new FileNameFilter;
-    if ($this->exportName) {
-        $this->exportName = $filter->filter($this->exportName);
-    } else {
-        $this->exportName = $filter->filter('export-' . $plural);
-    }
-
-    $excel = new PHPExcel();
-    $excelProperties = $excel->getProperties();
-    $excelProperties->setTitle($this->exportName);
-
-    $sheet = $excel->getActiveSheet();
-    if ($plural) {
-        $sheet->setTitle($plural);
-    }
-
-    $row = 1;
-    $col = 0;
-
-    if ($this->hasHeader) {
-        $headers = array();
+        if ($this->hasHeader) {
+            $headers = array();
 
             // determine the headers. If a field is callable (e.g. anonymous function) then use the
             // source name as the header instead
-        foreach ($columns as $columnSource => $columnHeader) {
-            $headers[] = (!is_string($columnHeader) && is_callable($columnHeader))
-                ? $columnSource : $columnHeader;
+            foreach ($columns as $columnSource => $columnHeader) {
+                $headers[] = (!is_string($columnHeader) && is_callable($columnHeader))
+                    ? $columnSource : $columnHeader;
+            }
+
+            foreach ($headers as $header) {
+                $sheet->setCellValueByColumnAndRow($col, $row, $header);
+                $col++;
+            }
+
+            $endcol = Coordinate::stringFromColumnIndex($col - 1);
+            $sheet->setAutoFilter("A1:{$endcol}1");
+            $sheet->getStyle("A1:{$endcol}1")->getFont()->setBold(true);
+
+            $col = 1;
+            $row++;
         }
-
-        foreach ($headers as $header) {
-            $sheet->setCellValueByColumnAndRow($col, $row, $header);
-            $col++;
-        }
-
-        $endcol = PHPExcel_Cell::stringFromColumnIndex($col - 1);
-        $sheet->setAutoFilter("A1:{$endcol}1");
-        $sheet->getStyle("A1:{$endcol}1")->getFont()->setBold(true);
-
-        $col = 0;
-        $row++;
-    }
 
         // Autosize
-    $cellIterator = $sheet->getRowIterator()->current()->getCellIterator();
-    try {
-        $cellIterator->setIterateOnlyExistingCells(true);
-    } catch (Exception $ex) {
+        $cellIterator = $sheet->getRowIterator()->current()->getCellIterator();
+        try {
+            $cellIterator->setIterateOnlyExistingCells(true);
+        } catch (Exception $ex) {
             // Ignore exceptions
-    }
-    foreach ($cellIterator as $cell) {
-        $sheet->getColumnDimension($cell->getColumn())->setAutoSize(true);
-    }
+        }
+        foreach ($cellIterator as $cell) {
+            $sheet->getColumnDimension($cell->getColumn())->setAutoSize(true);
+        }
 
         //Remove GridFieldPaginator as we're going to export the entire list.
-    $gridField->getConfig()->removeComponentsByType('GridFieldPaginator');
+        $gridField->getConfig()->removeComponentsByType('GridFieldPaginator');
 
-    $items = $gridField->getManipulatedList();
+        $items = $gridField->getManipulatedList();
 
         // @todo should GridFieldComponents change behaviour based on whether others are available in the config?
-    foreach ($gridField->getConfig()->getComponents() as $component) {
-        if ($component instanceof GridFieldFilterHeader || $component instanceof GridFieldSortableHeader) {
-            $items = $component->getManipulatedData($gridField, $items);
-        }
-    }
-
-    $list = $items->limit(null);
-    if (!empty($this->listFilters)) {
-        $list = $list->filter($this->listFilters);
-    }
-
-    foreach ($list as $item) {
-        if (!$this->checkCanView || !$item->hasMethod('canView') || $item->canView()) {
-            foreach ($columns as $columnSource => $columnHeader) {
-                if (!is_string($columnHeader) && is_callable($columnHeader)) {
-                    if ($item->hasMethod($columnSource)) {
-                        $relObj = $item->{$columnSource}();
-                    } else {
-                        $relObj = $item->relObject($columnSource);
-                    }
-
-                    $value = $columnHeader($relObj);
-                } else {
-                    $value = $gridField->getDataFieldValue(
-                        $item,
-                        $columnSource
-                    );
-                }
-
-                $sheet->setCellValueByColumnAndRow($col, $row, $value);
-                $col++;
+        foreach ($gridField->getConfig()->getComponents() as $component) {
+            if ($component instanceof GridFieldFilterHeader || $component instanceof GridFieldSortableHeader) {
+                $items = $component->getManipulatedData($gridField, $items);
             }
         }
 
-        if ($item->hasMethod('destroy')) {
-            $item->destroy();
+        $list = $items->limit(null);
+        if (!empty($this->listFilters)) {
+            $list = $list->filter($this->listFilters);
         }
 
-        $col = 0;
-        $row++;
+        foreach ($list as $item) {
+            if (!$this->checkCanView || !$item->hasMethod('canView') || $item->canView()) {
+                foreach ($columns as $columnSource => $columnHeader) {
+                    if (!is_string($columnHeader) && is_callable($columnHeader)) {
+                        if ($item->hasMethod($columnSource)) {
+                            $relObj = $item->{$columnSource}();
+                        } else {
+                            $relObj = $item->relObject($columnSource);
+                        }
+
+                        $value = $columnHeader($relObj);
+                    } else {
+                        $value = $gridField->getDataFieldValue(
+                            $item,
+                            $columnSource
+                        );
+                    }
+
+                    $sheet->setCellValueByColumnAndRow($col, $row, $value);
+                    $col++;
+                }
+            }
+
+            if ($item->hasMethod('destroy')) {
+                $item->destroy();
+            }
+
+            $col = 1;
+            $row++;
+        }
+
+        return $excel;
     }
 
-    return $excel;
-}
+    /**
+     * @return array
+     */
+    public function getExportColumns()
+    {
+        return $this->exportColumns;
+    }
 
-/**
- * @return array
- */
-public function getExportColumns()
-{
-    return $this->exportColumns;
-}
+    /**
+     * @param array
+     */
+    public function setExportColumns($cols)
+    {
+        $this->exportColumns = $cols;
+        return $this;
+    }
 
-/**
- * @param array
- */
-public function setExportColumns($cols)
-{
-    $this->exportColumns = $cols;
-    return $this;
-}
+    /**
+     * @return boolean
+     */
+    public function getHasHeader()
+    {
+        return $this->hasHeader;
+    }
 
-/**
- * @return boolean
- */
-public function getHasHeader()
-{
-    return $this->hasHeader;
-}
+    /**
+     * @param boolean
+     */
+    public function setHasHeader($bool)
+    {
+        $this->hasHeader = $bool;
+        return $this;
+    }
 
-/**
- * @param boolean
- */
-public function setHasHeader($bool)
-{
-    $this->hasHeader = $bool;
-    return $this;
-}
+    /**
+     * @return string
+     */
+    public function getExportType()
+    {
+        return $this->exportType;
+    }
 
-/**
- * @return string
- */
-public function getExportType()
-{
-    return $this->exportType;
-}
+    /**
+     * @param string xlsx (default) or xls
+     */
+    public function setExportType($exportType)
+    {
+        $this->exportType = $exportType;
+        return $this;
+    }
 
-/**
- * @param string xlsx (default) or xls
- */
-public function setExportType($exportType)
-{
-    $this->exportType = $exportType;
-    return $this;
-}
+    /**
+     * @return string
+     */
+    public function getExportName()
+    {
+        return $this->exportName;
+    }
 
-/**
- * @return string
- */
-public function getExportName()
-{
-    return $this->exportName;
-}
+    /**
+     * @param string $exportName
+     * @return \ExcelGridFieldExportButton
+     */
+    public function setExportName($exportName)
+    {
+        $this->exportName = $exportName;
+        return $this;
+    }
 
-/**
- * @param string $exportName
- * @return \ExcelGridFieldExportButton
- */
-public function setExportName($exportName)
-{
-    $this->exportName = $exportName;
-    return $this;
-}
+    /**
+     * @return string
+     */
+    public function getButtonTitle()
+    {
+        return $this->buttonTitle;
+    }
 
-/**
- * @return string
- */
-public function getButtonTitle()
-{
-    return $this->buttonTitle;
-}
+    /**
+     * @param string $buttonTitle
+     * @return \ExcelGridFieldExportButton
+     */
+    public function setButtonTitle($buttonTitle)
+    {
+        $this->buttonTitle = $buttonTitle;
+        return $this;
+    }
 
-/**
- * @param string $buttonTitle
- * @return \ExcelGridFieldExportButton
- */
-public function setButtonTitle($buttonTitle)
-{
-    $this->buttonTitle = $buttonTitle;
-    return $this;
-}
+    /**
+     *
+     * @return bool
+     */
+    public function getCheckCanView()
+    {
+        return $this->checkCanView;
+    }
 
-/**
- *
- * @return bool
- */
-public function getCheckCanView()
-{
-    return $this->checkCanView;
-}
+    /**
+     *
+     * @param bool $checkCanView
+     * @return \ExcelGridFieldExportButton
+     */
+    public function setCheckCanView($checkCanView)
+    {
+        $this->checkCanView = $checkCanView;
+        return $this;
+    }
 
-/**
- *
- * @param bool $checkCanView
- * @return \ExcelGridFieldExportButton
- */
-public function setCheckCanView($checkCanView)
-{
-    $this->checkCanView = $checkCanView;
-    return $this;
-}
+    /**
+     *
+     * @return array
+     */
+    public function getListFilters()
+    {
+        return $this->listFilters;
+    }
 
-/**
- *
- * @return array
- */
-public function getListFilters()
-{
-    return $this->listFilters;
-}
+    /**
+     *
+     * @param array $listFilters
+     * @return \ExcelGridFieldExportButton
+     */
+    public function setListFilters($listFilters)
+    {
+        $this->listFilters = $listFilters;
+        return $this;
+    }
 
-/**
- *
- * @param array $listFilters
- * @return \ExcelGridFieldExportButton
- */
-public function setListFilters($listFilters)
-{
-    $this->listFilters = $listFilters;
-    return $this;
-}
+    /**
+     *
+     * @return callable
+     */
+    public function getAfterExportCallback()
+    {
+        return $this->afterExportCallback;
+    }
 
-/**
- *
- * @return callable
- */
-public function getAfterExportCallback()
-{
-    return $this->afterExportCallback;
-}
-
-/**
- *
- * @param callable $afterExportCallback
- * @return \ExcelGridFieldExportButton
- */
-public function setAfterExportCallback(callable $afterExportCallback)
-{
-    $this->afterExportCallback = $afterExportCallback;
-    return $this;
-}
-
-
+    /**
+     *
+     * @param callable $afterExportCallback
+     * @return \ExcelGridFieldExportButton
+     */
+    public function setAfterExportCallback(callable $afterExportCallback)
+    {
+        $this->afterExportCallback = $afterExportCallback;
+        return $this;
+    }
 }

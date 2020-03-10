@@ -1,7 +1,9 @@
 <?php
 
+use PhpOffice\PhpSpreadsheet\IOFactory;
+
 /**
- * Use PHPExcel to expand BulkLoader file format support
+ * Use PHPSpreadsheet to expand BulkLoader file format support
  *
  * @author Koala
  */
@@ -47,7 +49,7 @@ class ExcelBulkLoader extends BulkLoader
 
     /**
      * Type of file if not able to determine through uploaded file
-     * 
+     *
      * @var string
      */
     protected $fileType = 'xlsx';
@@ -96,31 +98,31 @@ class ExcelBulkLoader extends BulkLoader
             case 'xlsm':   //	Excel (OfficeOpenXML) Macro Spreadsheet (macros will be discarded)
             case 'xltx':   //	Excel (OfficeOpenXML) Template
             case 'xltm':   //	Excel (OfficeOpenXML) Macro Template (macros will be discarded)
-                $readerType = 'Excel2007';
+                $readerType = 'Xlsx';
                 break;
             case 'xls':    //	Excel (BIFF) Spreadsheet
             case 'xlt':    //	Excel (BIFF) Template
-                $readerType = 'Excel5';
+                $readerType = 'Ods';
                 break;
             case 'ods':    //	Open/Libre Offic Calc
             case 'ots':    //	Open/Libre Offic Calc Template
                 $readerType = 'OOCalc';
                 break;
             case 'slk':
-                $readerType = 'SYLK';
+                $readerType = 'Slk';
                 break;
             case 'xml':    //	Excel 2003 SpreadSheetML
-                $readerType = 'Excel2003XML';
+                $readerType = 'Xml';
                 break;
             case 'gnumeric':
                 $readerType = 'Gnumeric';
                 break;
             case 'htm':
             case 'html':
-                $readerType = 'HTML';
+                $readerType = 'Html';
                 break;
             case 'csv':
-                $readerType = 'CSV';
+                $readerType = 'Csv';
                 break;
             default:
                 throw new Exception("Unsupported extension: $ext");
@@ -157,10 +159,9 @@ class ExcelBulkLoader extends BulkLoader
         $ext     = $this->getUploadFileExtension();
 
         $readerType = $this->getReaderType($ext);
-        $reader     = PHPExcel_IOFactory::createReader($readerType);
+        $reader     = IOFactory::createReader($readerType);
         $reader->setReadDataOnly(true);
-        if ($readerType == 'CSV') {
-            /* @var $reader PHPExcel_Reader_CSV */
+        if ($readerType == 'Csv') {
             $reader->setDelimiter($this->delimiter);
             $reader->setEnclosure($this->enclosure);
         }
@@ -187,8 +188,12 @@ class ExcelBulkLoader extends BulkLoader
 
         foreach ($data as $row) {
             $row = $this->mergeRowWithHeaders($row, $headers, $headersCount);
-            $id  = $this->processRecord($row, $this->columnMap, $results,
-                $preview);
+            $id  = $this->processRecord(
+                $row,
+                $this->columnMap,
+                $results,
+                $preview
+            );
         }
 
         return $results;
@@ -203,9 +208,13 @@ class ExcelBulkLoader extends BulkLoader
      *
      * @return int
      */
-    protected function processRecord($record, $columnMap, &$results,
-                                     $preview = false, $makeRelations = false)
-    {
+    protected function processRecord(
+        $record,
+        $columnMap,
+        &$results,
+        $preview = false,
+        $makeRelations = false
+    ) {
         $class = $this->objectClass;
 
         // find existing object, or create new one
@@ -228,11 +237,16 @@ class ExcelBulkLoader extends BulkLoader
                     // and write it back to the relation (or create a new object)
                     $relationName = $this->relationCallbacks[$fieldName]['relationname'];
                     if ($this->hasMethod($this->relationCallbacks[$fieldName]['callback'])) {
-                        $relationObj = $this->{$this->relationCallbacks[$fieldName]['callback']}($obj,
-                            $val, $record);
+                        $relationObj = $this->{$this->relationCallbacks[$fieldName]['callback']}(
+                            $obj,
+                            $val,
+                            $record
+                        );
                     } elseif ($obj->hasMethod($this->relationCallbacks[$fieldName]['callback'])) {
-                        $relationObj = $obj->{$this->relationCallbacks[$fieldName]['callback']}($val,
-                            $record);
+                        $relationObj = $obj->{$this->relationCallbacks[$fieldName]['callback']}(
+                            $val,
+                            $record
+                        );
                     }
                     if (!$relationObj || !$relationObj->exists()) {
                         $relationClass = $obj->hasOneComponent($relationName);
@@ -276,16 +290,15 @@ class ExcelBulkLoader extends BulkLoader
 
             // look up the mapping to see if this needs to map to callback
             $mapping = ($columnMap && isset($columnMap[$fieldName])) ? $columnMap[$fieldName]
-                    : null;
+                : null;
 
             // Mapping that starts with -> map to a method
             if ($mapping && strpos($mapping, '->') === 0) {
                 $funcName = substr($mapping, 2);
 
                 $this->$funcName($obj, $val, $record);
-            }
-            // Try to call import_myFieldName
-            else if ($obj->hasMethod("import{$fieldName}")) {
+            } elseif ($obj->hasMethod("import{$fieldName}")) {
+                // Try to call import_myFieldName
                 $obj->{"import{$fieldName}"}($val, $record);
             } else {
                 // Map column to field
@@ -358,23 +371,31 @@ class ExcelBulkLoader extends BulkLoader
                 if ($existingRecord) return $existingRecord;
             } elseif (is_array($duplicateCheck) && isset($duplicateCheck['callback'])) {
                 if ($this->hasMethod($duplicateCheck['callback'])) {
-                    $existingRecord = $this->{$duplicateCheck['callback']}($record[$fieldName],
-                        $record);
+                    $existingRecord = $this->{$duplicateCheck['callback']}(
+                        $record[$fieldName],
+                        $record
+                    );
                 } elseif ($SNG_objectClass->hasMethod($duplicateCheck['callback'])) {
-                    $existingRecord = $SNG_objectClass->{$duplicateCheck['callback']}($record[$fieldName],
-                        $record);
+                    $existingRecord = $SNG_objectClass->{$duplicateCheck['callback']}(
+                        $record[$fieldName],
+                        $record
+                    );
                 } else {
-                    user_error("CsvBulkLoader::processRecord():"
-                        ." {$duplicateCheck['callback']} not found on importer or object class.",
-                        E_USER_ERROR);
+                    user_error(
+                        "CsvBulkLoader::processRecord():"
+                            . " {$duplicateCheck['callback']} not found on importer or object class.",
+                        E_USER_ERROR
+                    );
                 }
 
                 if ($existingRecord) {
                     return $existingRecord;
                 }
             } else {
-                user_error('CsvBulkLoader::processRecord(): Wrong format for $duplicateChecks',
-                    E_USER_ERROR);
+                user_error(
+                    'CsvBulkLoader::processRecord(): Wrong format for $duplicateChecks',
+                    E_USER_ERROR
+                );
             }
         }
 

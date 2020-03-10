@@ -18,9 +18,12 @@ class ExcelGroupBulkLoader extends ExcelBulkLoader
         parent::__construct($objectClass);
     }
 
-    public function processRecord($record, $columnMap, &$results,
-                                  $preview = false)
-    {
+    public function processRecord(
+        $record,
+        $columnMap,
+        &$results,
+        $preview = false
+    ) {
         // We match by 'Code', the ID property is confusing the importer
         if (isset($record['ID'])) unset($record['ID']);
 
@@ -31,10 +34,12 @@ class ExcelGroupBulkLoader extends ExcelBulkLoader
         // are imported to avoid missing "early" references to parents
         // which are imported later on in the CSV file.
         if (isset($record['ParentCode']) && $record['ParentCode']) {
-            $parentGroup = DataObject::get_one('Group',
-                    array(
+            $parentGroup = DataObject::get_one(
+                'Group',
+                array(
                     '"Group"."Code"' => $record['ParentCode']
-            ));
+                )
+            );
             if ($parentGroup) {
                 $group->ParentID = $parentGroup->ID;
                 $group->write();
@@ -45,11 +50,13 @@ class ExcelGroupBulkLoader extends ExcelBulkLoader
         // existing permissions arent cleared.
         if (isset($record['PermissionCodes']) && $record['PermissionCodes']) {
             foreach (explode(',', $record['PermissionCodes']) as $code) {
-                $p = DataObject::get_one('Permission',
-                        array(
+                $p = DataObject::get_one(
+                    'Permission',
+                    array(
                         '"Permission"."Code"' => $code,
                         '"Permission"."GroupID"' => $group->ID
-                ));
+                    )
+                );
                 if (!$p) {
                     $p = new Permission(array('Code' => $code));
                     $p->write();

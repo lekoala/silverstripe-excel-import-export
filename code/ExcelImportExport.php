@@ -1,5 +1,8 @@
 <?php
 
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+
 /**
  * Support class for the module
  *
@@ -11,10 +14,12 @@ class ExcelImportExport
     public static function allFieldsForClass($class)
     {
         $dataClasses = ClassInfo::dataClassesFor($class);
-        $fields      = array();
+        $fields      = array('ID');
         foreach ($dataClasses as $dataClass) {
-            $fields = array_merge($fields,
-                array_keys(DataObject::database_fields($dataClass)));
+            $fields = array_merge(
+                $fields,
+                array_keys(DataObject::database_fields($dataClass))
+            );
         }
         return array_combine($fields, $fields);
     }
@@ -49,7 +54,7 @@ class ExcelImportExport
             $excel = $sng->sampleExcelFile();
             if (is_string($excel) && is_file($excel)) {
                 header('Content-type: application/vnd.ms-excel');
-                header('Content-Disposition: attachment; filename="'.$fileName.'"');
+                header('Content-Disposition: attachment; filename="' . $fileName . '"');
                 readfile($excel);
                 exit();
             }
@@ -58,10 +63,10 @@ class ExcelImportExport
             $excel = self::generateDefaultSampleFile($class);
         }
 
-        $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+        $writer = IOFactory::createWriter($excel, 'Xlsx');
 
         header('Content-type: application/vnd.ms-excel');
-        header('Content-Disposition: attachment; filename="'.$fileName.'"');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
         ob_clean();
         $writer->save('php://output');
         exit();
@@ -69,11 +74,11 @@ class ExcelImportExport
 
     public static function generateDefaultSampleFile($class)
     {
-        $excel = new PHPExcel();
+        $excel = new Spreadsheet();
         $sheet = $excel->getActiveSheet();
 
         $row = 1;
-        $col = 0;
+        $col = 1;
         foreach (ExcelImportExport::allFieldsForClass($class) as $header) {
             $sheet->setCellValueByColumnAndRow($col, $row, $header);
             $col++;
@@ -83,9 +88,11 @@ class ExcelImportExport
 
     public static function getValidExtensionsText()
     {
-        return _t('ExcelImportExport.VALIDEXTENSIONS',
+        return _t(
+            'ExcelImportExport.VALIDEXTENSIONS',
             "Allowed extensions: {extensions}",
-            array('extensions' => implode(', ', self::getValidExtensions())));
+            array('extensions' => implode(', ', self::getValidExtensions()))
+        );
     }
 
     public static function getValidExtensions()

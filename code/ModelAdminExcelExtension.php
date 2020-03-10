@@ -57,7 +57,7 @@ class ModelAdminExcelExtension extends Extension
         $owner = $this->owner;
         $class = $owner->modelClass;
 
-        // Overwrite model imports 
+        // Overwrite model imports
         $importerClasses = $owner->stat('model_importers');
 
         if (is_null($importerClasses)) {
@@ -74,9 +74,11 @@ class ModelAdminExcelExtension extends Extension
 
         $fields = $form->Fields();
 
-        $content = _t('ModelAdminExcelExtension.DownloadSample',
+        $content = _t(
+            'ModelAdminExcelExtension.DownloadSample',
             '<div class="field"><a href="{link}">Download sample file</a></div>',
-            array('link' => $owner->Link($class.'/downloadsample')));
+            array('link' => $owner->Link($class . '/downloadsample'))
+        );
 
         $file = $fields->dataFieldByName('_CsvFile');
         if ($file) {
@@ -85,8 +87,10 @@ class ModelAdminExcelExtension extends Extension
         }
 
         $fields->removeByName("SpecFor{$modelName}");
-        $fields->insertAfter('EmptyBeforeImport',
-            new LiteralField("SampleFor{$modelName}", $content));
+        $fields->insertAfter(
+            'EmptyBeforeImport',
+            new LiteralField("SampleFor{$modelName}", $content)
+        );
 
         if (!$modelSNG->canDelete()) {
             $fields->removeByName('EmptyBeforeImport');
@@ -96,8 +100,10 @@ class ModelAdminExcelExtension extends Extension
 
         $import = $actions->dataFieldByName('action_import');
         if ($import) {
-            $import->setTitle(_t('ModelAdminExcelExtension.ImportExcel',
-                    "Import from Excel"));
+            $import->setTitle(_t(
+                'ModelAdminExcelExtension.ImportExcel',
+                "Import from Excel"
+            ));
         }
     }
 }

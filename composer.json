@@ -11,16 +11,14 @@
         "cms"
     ],
     "license": "MIT",
-    "authors": [
-        {
-            "name": "LeKoala",
-            "email": "thomas@lekoala.be"
-        }
-    ],
+    "authors": [{
+        "name": "LeKoala",
+        "email": "thomas@lekoala.be"
+    }],
     "require": {
         "php": ">=5.4.8",
         "silverstripe/framework": "~3.1",
-        "phpoffice/phpexcel": "1.8.1"
+        "phpoffice/phpspreadsheet": "^1.11"
     },
     "extra": {
         "installer-name": "excel-import-export"

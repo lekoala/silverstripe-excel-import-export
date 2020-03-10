@@ -22,9 +22,12 @@ class ExcelMemberBulkLoader extends ExcelBulkLoader
         'Email' => 'Email',
     );
 
-    public function processRecord($record, $columnMap, &$results,
-                                  $preview = false)
-    {
+    public function processRecord(
+        $record,
+        $columnMap,
+        &$results,
+        $preview = false
+    ) {
         $objID = parent::processRecord($record, $columnMap, $results, $preview);
 
         $_cache_groupByCode = array();

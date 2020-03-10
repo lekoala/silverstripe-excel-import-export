@@ -8,9 +8,13 @@
 class ExcelMemberImportForm extends MemberImportForm
 {
 
-    public function __construct($controller, $name, $fields = null,
-                                $actions = null, $validator = null)
-    {
+    public function __construct(
+        $controller,
+        $name,
+        $fields = null,
+        $actions = null,
+        $validator = null
+    ) {
         if (!$fields) {
             $helpHtml = _t(
                 'ExcelMemberImportForm.Help1',
@@ -20,35 +24,40 @@ class ExcelMemberImportForm extends MemberImportForm
             $helpHtml .= _t(
                 'ExcelMemberImportForm.Help2',
                 '<ul>'
-                .'<li>Existing users are matched by their unique <em>Email</em> property, and updated with any new values from '
-                .'the imported file.</li>'
-                .'<li>Groups can be assigned by the <em>Groups</em> column. Groups are identified by their <em>Code</em> property, '
-                .'multiple groups can be separated by comma. Existing group memberships are not cleared.</li>'
-                .'</ul>'
+                    . '<li>Existing users are matched by their unique <em>Email</em> property, and updated with any new values from '
+                    . 'the imported file.</li>'
+                    . '<li>Groups can be assigned by the <em>Groups</em> column. Groups are identified by their <em>Code</em> property, '
+                    . 'multiple groups can be separated by comma. Existing group memberships are not cleared.</li>'
+                    . '</ul>'
             );
 
             $importer   = new MemberCsvBulkLoader();
             $importSpec = $importer->getImportSpec();
-            $helpHtml   = sprintf($helpHtml,
-                implode(', ', array_keys($importSpec['fields'])));
+            $helpHtml   = sprintf(
+                $helpHtml,
+                implode(', ', array_keys($importSpec['fields']))
+            );
 
             $extensions = array('csv', 'xls', 'xlsx', 'ods', 'txt');
             $fields    = new FieldList(
                 new LiteralField('Help', $helpHtml),
                 $fileField = new FileField(
-                'File',
-                _t(
-                    'ExcelMemberImportForm.FileFieldLabel',
-                    'File <small><br/>(allowed extensions: {extensions})</small>', array('extensions' => implode(', ', $extensions))
-                )
+                    'File',
+                    _t(
+                        'ExcelMemberImportForm.FileFieldLabel',
+                        'File <small><br/>(allowed extensions: {extensions})</small>',
+                        array('extensions' => implode(', ', $extensions))
+                    )
                 )
             );
             $fileField->getValidator()->setAllowedExtensions(ExcelImportExport::getValidExtensions());
         }
 
         if (!$actions) {
-            $action  = new FormAction('doImport',
-                _t('ExcelMemberImportForm.BtnImport', 'Import from file'));
+            $action  = new FormAction(
+                'doImport',
+                _t('ExcelMemberImportForm.BtnImport', 'Import from file')
+            );
             $action->addExtraClass('ss-ui-button');
             $actions = new FieldList($action);
         }
@@ -74,24 +83,27 @@ class ExcelMemberImportForm extends MemberImportForm
         // result message
         $msgArr   = array();
         if ($result->CreatedCount())
-                $msgArr[] = _t(
+            $msgArr[] = _t(
                 'ExcelMemberImportForm.ResultCreated',
                 'Created {count} members',
                 array('count' => $result->CreatedCount())
             );
         if ($result->UpdatedCount())
-                $msgArr[] = _t(
+            $msgArr[] = _t(
                 'ExcelMemberImportForm.ResultUpdated',
                 'Updated {count} members',
                 array('count' => $result->UpdatedCount())
             );
         if ($result->DeletedCount())
-                $msgArr[] = _t(
-                'ExcelMemberImportForm.ResultDeleted', 'Deleted %d members',
+            $msgArr[] = _t(
+                'ExcelMemberImportForm.ResultDeleted',
+                'Deleted %d members',
                 array('count' => $result->DeletedCount())
             );
-        $msg      = ($msgArr) ? implode(',', $msgArr) : _t('ExcelMemberImportForm.ResultNone',
-                'No changes');
+        $msg      = ($msgArr) ? implode(',', $msgArr) : _t(
+            'ExcelMemberImportForm.ResultNone',
+            'No changes'
+        );
 
         $this->sessionMessage($msg, 'good');
 
