@@ -29,6 +29,12 @@ class ExcelImportExport
     public static $iterate_only_existing_cells = true;
 
     /**
+     * Useful if importing only one sheet or if computation fails
+     * @var bool
+     */
+    public static $use_old_calculated_value = false;
+
+    /**
      * Some excel sheets need extra processing
      * @var boolean
      */
@@ -321,7 +327,7 @@ class ExcelImportExport
      * @param IReader $reader
      * @return Csv
      */
-    protected function getCsvReader(IReader $reader)
+    protected static function getCsvReader(IReader $reader)
     {
         return $reader;
     }
@@ -341,7 +347,7 @@ class ExcelImportExport
         $reader = IOFactory::createReader($readerType);
         if ($readerType == 'Csv') {
             // @link https://phpspreadsheet.readthedocs.io/en/latest/topics/reading-and-writing-to-file/#setting-csv-options_1
-            $reader = $this->getCsvReader($reader);
+            $reader = self::getCsvReader($reader);
             $reader->setDelimiter($delimiter);
             $reader->setEnclosure($enclosure);
         } else {
@@ -387,7 +393,11 @@ class ExcelImportExport
                     }
                     $cells = [];
                     foreach ($cellIterator as $cell) {
-                        $cells[] = $cell->getFormattedValue();
+                        if (self::$use_old_calculated_value) {
+                            $cells[] = $cell->getOldCalculatedValue();
+                        } else {
+                            $cells[] = $cell->getFormattedValue();
+                        }
                     }
                     $data[] = $cells;
                 }
@@ -432,7 +442,11 @@ class ExcelImportExport
                 }
                 $cells = [];
                 foreach ($cellIterator as $cell) {
-                    $cells[] = $cell->getFormattedValue();
+                    if (self::$use_old_calculated_value) {
+                        $cells[] = $cell->getOldCalculatedValue();
+                    } else {
+                        $cells[] = $cell->getFormattedValue();
+                    }
                 }
                 if (empty($headers)) {
                     $headers = $cells;
