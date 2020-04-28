@@ -338,11 +338,14 @@ class ExcelImportExport
      * @param string $filepath
      * @param string $delimiter (csv only)
      * @param string $enclosure (csv only)
+     * @param string $ext if extension cannot be deducted from filepath (eg temp files)
      * @return array
      */
-    public static function fileToArray($filepath, $delimiter = ';', $enclosure = '')
+    public static function fileToArray($filepath, $delimiter = ';', $enclosure = '', $ext = null)
     {
-        $ext = pathinfo($filepath, PATHINFO_EXTENSION);
+        if ($ext === null) {
+            $ext = pathinfo($filepath, PATHINFO_EXTENSION);
+        }
         $readerType = self::getReaderForExtension($ext);
         $reader = IOFactory::createReader($readerType);
         if ($readerType == 'Csv') {
@@ -370,10 +373,14 @@ class ExcelImportExport
      * @param string $filepath
      * @param string $sheetname Load a specific worksheet by name
      * @param true $onlyExisting Avoid reading empty columns
+     * @param string $ext if extension cannot be deducted from filepath (eg temp files)
      * @return array
      */
-    public static function excelToArray($filepath, $sheetname = null, $onlyExisting = true)
+    public static function excelToArray($filepath, $sheetname = null, $onlyExisting = true, $ext = null)
     {
+        if ($ext === null) {
+            $ext = pathinfo($filepath, PATHINFO_EXTENSION);
+        }
         $ext = pathinfo($filepath, PATHINFO_EXTENSION);
         $readerType = self::getReaderForExtension($ext);
         $reader = IOFactory::createReader($readerType);
@@ -418,11 +425,14 @@ class ExcelImportExport
      *
      * @param string $filepath
      * @param string $sheetname Load a specific worksheet by name
+     * @param string $ext if extension cannot be deducted from filepath (eg temp files)
      * @return array
      */
-    public static function excelToAssocArray($filepath, $sheetname = null)
+    public static function excelToAssocArray($filepath, $sheetname = null, $ext = null)
     {
-        $ext = pathinfo($filepath, PATHINFO_EXTENSION);
+        if ($ext === null) {
+            $ext = pathinfo($filepath, PATHINFO_EXTENSION);
+        }
         $readerType = self::getReaderForExtension($ext);
         $reader = IOFactory::createReader($readerType);
         $reader->setReadDataOnly(true);
