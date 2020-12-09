@@ -46,6 +46,11 @@ class ExcelImportExport
     public static $default_tmp_reader = 'Xlsx';
 
     /**
+     * @var integer
+     */
+    public static $limit_exports = 1000;
+
+    /**
      * Get all db fields for a given dataobject class
      *
      * @param string $class

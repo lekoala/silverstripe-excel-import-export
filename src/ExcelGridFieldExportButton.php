@@ -274,7 +274,7 @@ class ExcelGridFieldExportButton implements
         }
 
         if ($items instanceof DataList) {
-            $list = $items->limit(null);
+            $list = $items->limit(ExcelImportExport::$limit_exports);
         }
         if (!empty($this->listFilters)) {
             $list = $list->filter($this->listFilters);
