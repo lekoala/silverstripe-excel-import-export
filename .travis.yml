@@ -44,22 +44,22 @@ before_script:
   - echo "memory_limit = ${memlimit}" >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
   - echo 'always_populate_raw_post_data = -1' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
 
-# Init PHP
-  - sudo apt-get -y install pcre-devel gcc zlib zlib-devel
+  # Init PHP
+  - sudo apt-get -y install pcre-devel gcc zlib zlib-devel zip
   - pecl channel-update pecl.php.net
   - pecl install zip
   - phpenv rehash
   - phpenv config-rm xdebug.ini || true
   - echo 'memory_limit = 2048M' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
 
-# Install composer dependencies
+  # Install composer dependencies
   - composer validate
   - if [[ $DB == PGSQL ]]; then composer require silverstripe/postgresql:^2 --no-update; fi
   - if [[ $DB == SQLITE ]]; then composer require silverstripe/sqlite3:^2 --no-update; fi
   - if [[ $PHPCS_TEST ]]; then composer global require squizlabs/php_codesniffer:^3 --prefer-dist --no-interaction --no-progress --no-suggest -o; fi
   - composer install --prefer-source --no-interaction --no-progress --no-suggest --optimize-autoloader --verbose --profile
 
-# Log constants to CI for debugging purposes
+  # Log constants to CI for debugging purposes
   - php vendor/silverstripe/framework/tests/dump_constants.php
 
 script:
