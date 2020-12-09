@@ -1,5 +1,3 @@
-sudo: false
-
 language: php
 
 os: linux
@@ -15,7 +13,7 @@ env:
     - SS_ENVIRONMENT_TYPE=dev
     - SS_BASE_URL="http://localhost:8080/"
 
-matrix:
+jobs:
   fast_finish: true
   include:
     - php: 7.2
