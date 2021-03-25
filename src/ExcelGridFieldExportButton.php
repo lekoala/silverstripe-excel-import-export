@@ -280,6 +280,10 @@ class ExcelGridFieldExportButton implements
             $list = $list->filter($this->listFilters);
         }
 
+        if (!$list) {
+            return $excel;
+        }
+
         foreach ($list as $item) {
             if (!$this->checkCanView || !$item->hasMethod('canView') || $item->canView()) {
                 foreach ($columns as $columnSource => $columnHeader) {
