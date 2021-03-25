@@ -46,6 +46,7 @@ before_script:
 
   # Init PHP
   - sudo apt-get -y install zip
+  - sudo apt-get -y install libzip-dev
   - pecl channel-update pecl.php.net
   - pecl install zip
   - phpenv rehash
