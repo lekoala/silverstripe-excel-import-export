@@ -23,10 +23,10 @@ class ExcelImportExport
     use Configurable;
 
     /**
-     * You boolean want to disable this if you get "No cells exist within the specified range"
+     * Setting this to false improve performance but may lead to skipped cells
      * @var bool
      */
-    public static $iterate_only_existing_cells = true;
+    public static $iterate_only_existing_cells = false;
 
     /**
      * Useful if importing only one sheet or if computation fails
