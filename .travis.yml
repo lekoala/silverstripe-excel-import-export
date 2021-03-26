@@ -2,7 +2,7 @@ language: php
 
 os: linux
 
-dist: xenial
+dist: focal
 
 cache:
   directories:
