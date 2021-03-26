@@ -1,8 +1,8 @@
-sudo: false
-
 language: php
 
-dist: trusty
+os: linux
+
+dist: xenial
 
 cache:
   directories:
@@ -10,45 +10,57 @@ cache:
 
 env:
   global:
-    - COMPOSER_ROOT_VERSION=4.4.x-dev
+    - SS_ENVIRONMENT_TYPE=dev
+    - SS_BASE_URL="http://localhost:8080/"
 
-matrix:
+jobs:
   fast_finish: true
   include:
-    - php: 7.1
-      env:
-        - DB=PGSQL
-        - PHPCS_TEST=1
-
     - php: 7.2
       env:
         - DB=PGSQL
         - PDO=1
-
+        - PHPCS_TEST=1
+        - PHPUNIT_TEST=1
     - php: 7.3
+      env:
+        - DB=MYSQL
+        - PDO=1
+    - php: 7.4
       env:
         - DB=MYSQL
         - PDO=1
 
 before_script:
-# Extra $PATH
-  - export PATH=~/.composer/vendor/bin:$PATH
+  # COMPOSER
+  # install $COMPOSER_VERSION if defined, otherwise use Composer v1 with PHP <= 7.3, Composer v2 for >= 7.3
+  - if [ $COMPOSER_VERSION ] ; then composer self-update --$COMPOSER_VERSION ; elif [ $(php -r 'echo (int) version_compare(phpversion(), "7.3.0", "<=");') = "1" ] ; then composer self-update --1; else composer self-update --2; fi
+  - composer --version
 
-# Init PHP
+  # PHPENV
+  - phpenv rehash
+  - phpenv config-rm xdebug.ini || true
+  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then memlimit='8192M'; else memlimit='4096M'; fi
+  - echo "memory_limit = ${memlimit}" >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+  - echo 'always_populate_raw_post_data = -1' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+
+  # Init PHP
+  - sudo apt-get -y install zip
+  - sudo apt-get -y install libzip-dev
   - pecl channel-update pecl.php.net
-  - pecl install zlib zip
+  - pecl install zip
   - phpenv rehash
   - phpenv config-rm xdebug.ini || true
   - echo 'memory_limit = 2048M' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
 
-# Install composer dependencies
+  # Install composer dependencies
   - composer validate
-  - if [[ $DB == PGSQL ]]; then composer require silverstripe/postgresql:2.2.x-dev --no-update; fi
-  - if [[ $DB == SQLITE ]]; then composer require silverstripe/sqlite3:2.2.x-dev --no-update; fi
+  - if [[ $DB == PGSQL ]]; then composer require silverstripe/postgresql:^2 --no-update; fi
+  - if [[ $DB == SQLITE ]]; then composer require silverstripe/sqlite3:^2 --no-update; fi
   - if [[ $PHPCS_TEST ]]; then composer global require squizlabs/php_codesniffer:^3 --prefer-dist --no-interaction --no-progress --no-suggest -o; fi
   - composer install --prefer-source --no-interaction --no-progress --no-suggest --optimize-autoloader --verbose --profile
 
-# Log constants to CI for debugging purposes
+  # Log constants to CI for debugging purposes
   - php vendor/silverstripe/framework/tests/dump_constants.php
 
 script:

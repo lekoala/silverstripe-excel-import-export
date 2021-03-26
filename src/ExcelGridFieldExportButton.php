@@ -273,31 +273,51 @@ class ExcelGridFieldExportButton implements
             }
         }
 
+        $list = $items;
         if ($items instanceof DataList) {
-            $list = $items->limit(null);
+            $list = $items->limit(ExcelImportExport::$limit_exports);
+            if (!empty($this->listFilters)) {
+                $list = $list->filter($this->listFilters);
+            }
         }
-        if (!empty($this->listFilters)) {
-            $list = $list->filter($this->listFilters);
+
+        if (!$list) {
+            return $excel;
         }
+
+
+        $row = 1;
+        $col = 1;
 
         foreach ($list as $item) {
-            if (!$this->checkCanView || !$item->hasMethod('canView') || $item->canView()) {
-                foreach ($columns as $columnSource => $columnHeader) {
-                    if (!is_string($columnHeader) && is_callable($columnHeader)) {
-                        if ($item->hasMethod($columnSource)) {
-                            $relObj = $item->{$columnSource}();
-                        } else {
-                            $relObj = $item->relObject($columnSource);
-                        }
-
-                        $value = $columnHeader($relObj);
+            if ($this->checkCanView) {
+                $canView = true;
+                if ($item->hasMethod('canView') && !$item->canView()) {
+                    $canView = false;
+                }
+                if (!$canView) {
+                    continue;
+                }
+            }
+            foreach ($columns as $columnSource => $columnHeader) {
+                if (!is_string($columnHeader) && is_callable($columnHeader)) {
+                    if ($item->hasMethod($columnSource)) {
+                        $relObj = $item->{$columnSource}();
                     } else {
-                        $value = $gridField->getDataFieldValue($item, $columnSource);
+                        $relObj = $item->relObject($columnSource);
                     }
 
-                    $sheet->setCellValueByColumnAndRow($col, $row, $value);
-                    $col++;
+                    $value = $columnHeader($relObj);
+                } else {
+                    if (is_string($columnSource)) {
+                        $value = $gridField->getDataFieldValue($item, $columnSource);
+                    } else {
+                        $value = $item->$columnHeader;
+                    }
                 }
+
+                $sheet->setCellValueByColumnAndRow($col, $row, $value);
+                $col++;
             }
 
             if ($item->hasMethod('destroy')) {
