@@ -285,10 +285,6 @@ class ExcelGridFieldExportButton implements
             return $excel;
         }
 
-
-        $row = 1;
-        $col = 1;
-
         foreach ($list as $item) {
             if ($this->checkCanView) {
                 $canView = true;
