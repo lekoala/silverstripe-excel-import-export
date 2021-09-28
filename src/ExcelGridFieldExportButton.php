@@ -308,7 +308,17 @@ class ExcelGridFieldExportButton implements
                     if (is_string($columnSource)) {
                         $value = $gridField->getDataFieldValue($item, $columnSource);
                     } else {
-                        $value = $item->$columnHeader;
+                        // We can also use a simple dot notation
+                        $parts = explode(".", $columnHeader);
+                        if (count($parts) == 1) {
+                            $value = $item->$columnHeader;
+                        } else {
+                            $value = $item->relObject($parts[0]);
+                            if ($value) {
+                                $relObjField = $parts[1];
+                                $value = $value->$relObjField;
+                            }
+                        }
                     }
                 }
 
