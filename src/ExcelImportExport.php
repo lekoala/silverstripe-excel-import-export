@@ -423,6 +423,16 @@ class ExcelImportExport
     }
 
     /**
+     * @link https://stackoverflow.com/questions/44304795/how-to-retrieve-date-from-table-cell-using-phpspreadsheet#44304796
+     * @param int $v
+     * @return string
+     */
+    public static function convertExcelDate($v)
+    {
+        return date('Y-m-d', Date::excelToTimestamp($v));
+    }
+
+    /**
      * Convert an excel file to an associative array
      *
      * Suppose the first line are the headers of the file
@@ -470,7 +480,7 @@ class ExcelImportExport
                         $headers = array_map(function ($v) {
                             // Numeric headers are most of the time dates
                             if (is_numeric($v)) {
-                                $v = date('Y-m-d', Date::excelToTimestamp($v));
+                                $v =  self::convertExcelDate($v);
                             }
                             // trim does not always work great and headers can contain utf8 stuff
                             return is_string($v) ? preg_replace('/(^\s+)|(\s+$)/us', '', $v) : $v;
