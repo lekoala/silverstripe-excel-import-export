@@ -429,6 +429,9 @@ class ExcelImportExport
      */
     public static function convertExcelDate($v)
     {
+        if (!is_numeric($v)) {
+            return '';
+        }
         return date('Y-m-d', Date::excelToTimestamp($v));
     }
 
