@@ -311,9 +311,9 @@ class ExcelBulkLoader extends BulkLoader
                 if (isset($db[$usedName])) {
                     switch ($db[$usedName]) {
                         case 'Boolean':
-                            if ($val == 'yes') {
+                            if ((string) $val == 'yes') {
                                 $val = true;
-                            } elseif ($val == 'no') {
+                            } elseif ((string) $val == 'no') {
                                 $val = false;
                             }
                     }
