@@ -11,16 +11,6 @@ use SilverStripe\Security\Member;
  */
 class ExcelImportExportTest extends SapphireTest
 {
-    public function setUp()
-    {
-        parent::setUp();
-    }
-
-    public function tearDown()
-    {
-        parent::tearDown();
-    }
-
     public function testGetAllFields()
     {
         $fields = ExcelImportExport::allFieldsForClass(Member::class);
