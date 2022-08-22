@@ -31,6 +31,13 @@
     "extra": {
         "installer-name": "excel-import-export"
     },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true,
+            "silverstripe/recipe-plugin": true,
+            "silverstripe/vendor-plugin": true
+        }
+    },
     "support": {
         "issues": "https://github.com/lekoala/silverstripe-excel-import-export/issues"
     },
