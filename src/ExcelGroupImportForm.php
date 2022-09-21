@@ -2,6 +2,10 @@
 
 namespace LeKoala\ExcelImportExport;
 
+if (!class_exists(SilverStripe\Admin\GroupImportForm::class)) {
+    return;
+}
+
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FileField;
 use SilverStripe\Forms\FormAction;
