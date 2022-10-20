@@ -4,7 +4,6 @@ namespace LeKoala\ExcelImportExport\Extensions;
 
 use SilverStripe\Forms\Form;
 use SilverStripe\Core\Extension;
-use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use LeKoala\ExcelImportExport\ExcelBulkLoader;
 use LeKoala\ExcelImportExport\ExcelImportExport;
@@ -58,31 +57,14 @@ class ModelAdminExcelExtension extends Extension
         ExcelImportExport::sampleFileForClass($this->owner->modelClass);
     }
 
-    /**
-     * Helper method to return a gridfield that your ide loves
-     *
-     * @param Form $form
-     * @param string $sanitisedClass
-     * @return GridField
-     */
-    protected function getGridFieldForClass($form, $sanitisedClass)
-    {
-        return $form->Fields()->dataFieldByName($sanitisedClass);
-    }
-
-    public function updateEditForm(Form $form)
+    public function updateGridFieldConfig( GridFieldConfig $config )
     {
         /* @var $owner ModelAdmin */
         $owner       = $this->owner;
         $class       = $owner->modelClass;
-        $sanitisedClass = str_replace('\\', '-', $class);
+        // $sanitisedClass = str_replace('\\', '-', $class);
         $classConfig = $owner->config();
 
-        $gridfield = $this->getGridFieldForClass($form, $sanitisedClass);
-        if (!$gridfield) {
-            return;
-        }
-        $config = $gridfield->getConfig();
 
         // Handle export buttons
         if ($classConfig->export_csv) {
