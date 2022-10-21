@@ -130,14 +130,13 @@ class ModelAdminExcelExtension extends Extension
             // This is way too dangerous and customers don't understand what this is most of the time
             $fields->removeByName("EmptyBeforeImport");
         }
-
-        // We moved the specs into a nice to use download sample button
-        $fields->removeByName("SpecFor{$modelName}");
-
         // If you cannot delete, you cannot empty
         if (!$modelSNG->canDelete()) {
             $fields->removeByName('EmptyBeforeImport');
         }
+
+        // We moved the specs into a nice to use download sample button
+        $fields->removeByName("SpecFor{$modelName}");
 
         $actions = $form->Actions();
 

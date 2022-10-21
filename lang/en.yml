@@ -1,0 +1,22 @@
+en:
+  ExcelImportExport:
+    BtnImport: 'Import from file'
+    DownloadSample: 'Download sample file'
+    GroupImportHelp1: 'For supported columns, please check the sample file.'
+    GroupImportHelp2: 'Existing groups are matched by their unique <em>Code</em> value, and updated with any new values from the imported file.'
+    GroupImportHelp3: 'Group hierarchies can be created by using a <em>ParentCode</em> column.'
+    GroupImportHelp4: 'Permission codes can be assigned by the <em>PermissionCode</em> column. Existing permission codes are not cleared.'
+    IMPORTFROMFILE: 'Import from a file'
+    IMPORTGROUPSFROMFILE: 'Import groups from a file'
+    IMPORTMEMBERSFROMFILE: 'Import members from a file'
+    ImportExcel: 'Import from Excel'
+    MemberImportHelp1: 'For supported columns, please check the sample file.'
+    MemberImportHelp2: 'Existing users are matched by their unique <em>Email</em> property, and updated with any new values from the imported file.'
+    MemberImportHelp3: 'Groups can be assigned by the <em>Groups</em> column. Groups are identified by their <em>Code</em> property, multiple groups can be separated by comma. Existing group memberships are not cleared.'
+    ResultCreated: 'Created {count} members'
+    ResultDeleted: 'Deleted %d members'
+    ResultNone: 'No changes'
+    ResultUpdated: 'Updated {count} members'
+    VALIDEXTENSIONS: 'Allowed extensions: {extensions}'
+    XLSEXPORT: 'Export to Excel'
+    XLSIMPORT: Import
