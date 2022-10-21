@@ -4,9 +4,10 @@ namespace LeKoala\ExcelImportExport\Extensions;
 
 use SilverStripe\Forms\Form;
 use SilverStripe\Core\Extension;
-use SilverStripe\Forms\GridField\GridFieldConfig;
+use SilverStripe\Admin\ModelAdmin;
 use LeKoala\ExcelImportExport\ExcelBulkLoader;
 use LeKoala\ExcelImportExport\ExcelImportExport;
+use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldExportButton;
 use SilverStripe\Forms\GridField\GridFieldImportButton;
 use LeKoala\ExcelImportExport\ExcelGridFieldExportButton;
@@ -57,22 +58,22 @@ class ModelAdminExcelExtension extends Extension
         ExcelImportExport::sampleFileForClass($this->owner->modelClass);
     }
 
-    public function updateGridFieldConfig( GridFieldConfig $config )
+    public function updateGridFieldConfig(GridFieldConfig $config)
     {
-        /* @var $owner ModelAdmin */
-        $owner       = $this->owner;
-        $class       = $owner->modelClass;
-        // $sanitisedClass = str_replace('\\', '-', $class);
+        /** @var ModelAdmin $owner */
+        $owner = $this->owner;
+        $class = $owner->modelClass;
         $classConfig = $owner->config();
 
-
-        // Handle export buttons
+        // Add/remove csv export (hide by default)
         if ($classConfig->export_csv) {
             $GridFieldExportButton = $this->getGridFieldExportButton($config);
             $GridFieldExportButton->setExportColumns(ExcelImportExport::exportFieldsForClass($class));
         } else {
             $config->removeComponentsByType(GridFieldExportButton::class);
         }
+
+        // Add/remove csv export (add by default)
         if ($classConfig->export_excel) {
             $ExcelGridFieldExportButton = new ExcelGridFieldExportButton('buttons-before-left');
             $config->addComponent($ExcelGridFieldExportButton);
@@ -99,7 +100,7 @@ class ModelAdminExcelExtension extends Extension
 
     public function updateImportForm(Form $form)
     {
-        /* @var $owner ModelAdmin */
+        /** @var ModelAdmin $owner */
         $owner = $this->owner;
         $class = $owner->modelClass;
         $modelSNG  = singleton($class);
