@@ -1,6 +1,7 @@
 en:
   ExcelImportExport:
     BtnImport: 'Import from file'
+    DefaultHandler: 'Default import handler'
     DownloadSample: 'Download sample file'
     GroupImportHelp1: 'For supported columns, please check the sample file.'
     GroupImportHelp2: 'Existing groups are matched by their unique <em>Code</em> value, and updated with any new values from the imported file.'
@@ -13,6 +14,8 @@ en:
     MemberImportHelp1: 'For supported columns, please check the sample file.'
     MemberImportHelp2: 'Existing users are matched by their unique <em>Email</em> property, and updated with any new values from the imported file.'
     MemberImportHelp3: 'Groups can be assigned by the <em>Groups</em> column. Groups are identified by their <em>Code</em> property, multiple groups can be separated by comma. Existing group memberships are not cleared.'
+    OnlyUpdateRecords: 'Only update records'
+    PleaseSelectImportHandler: 'Please select the import handler'
     ResultCreated: 'Created {count} members'
     ResultDeleted: 'Deleted %d members'
     ResultNone: 'No changes'

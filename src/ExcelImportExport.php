@@ -3,15 +3,19 @@
 namespace LeKoala\ExcelImportExport;
 
 use Exception;
+use SilverStripe\Forms\Form;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\Control\Controller;
 use SilverStripe\Core\Config\Config;
+use SilverStripe\Control\HTTPResponse;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use SilverStripe\Dev\BulkLoader_Result;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use SilverStripe\Core\Config\Configurable;
 use PhpOffice\PhpSpreadsheet\Reader\IReader;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 /**
  * Support class for the module
@@ -141,7 +145,7 @@ class ExcelImportExport
     public static function sampleFileForClass($class)
     {
         $fileName = "sample-file-for-$class.xlsx";
-        $spreadsheet    = null;
+        $spreadsheet = null;
 
         $sng = singleton($class);
         if ($sng->hasMethod('sampleExcelFile')) {
@@ -162,6 +166,89 @@ class ExcelImportExport
         self::outputHeaders($fileName);
         $writer->save('php://output');
         exit();
+    }
+
+    /**
+     * @param Controller $controller
+     * @return bool
+     */
+    public static function checkImportForm($controller)
+    {
+        if (!$controller->showImportForm) {
+            return false;
+        }
+        $modelClass = $controller->getModelClass();
+        if (is_array($controller->showImportForm)) {
+            /** @var array $valid */
+            $valid = $controller->showImportForm;
+            if (!in_array($modelClass, $valid)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @param string $handler
+     * @param Form $form
+     * @param Controller $controller
+     * @return HTTPResponse
+     */
+    public static function useCustomHandler($handler, Form $form, Controller $controller)
+    {
+        if (!$handler || !method_exists($handler, "load")) {
+            $form->sessionMessage("Invalid handler: $handler", 'bad');
+            return $controller->redirectBack();
+        }
+        $file = $_FILES['_CsvFile']['tmp_name'];
+        $name = $_FILES['_CsvFile']['name'];
+        $inst = new $handler();
+
+        if (!empty($_POST['OnlyUpdateRecords']) && method_exists($handler, 'setOnlyUpdate')) {
+            $inst->setOnlyUpdate(true);
+        }
+
+        /** @var BulkLoader_Result|string $results  */
+        try {
+            $results = $inst->load($file, $name);
+        } catch (Exception $e) {
+            $form->sessionMessage($e->getMessage(), 'bad');
+            return $controller->redirectBack();
+        }
+
+        $message = '';
+        if ($results instanceof BulkLoader_Result) {
+            if ($results->CreatedCount()) {
+                $message .= _t(
+                    'ModelAdmin.IMPORTEDRECORDS',
+                    "Imported {count} records.",
+                    ['count' => $results->CreatedCount()]
+                );
+            }
+            if ($results->UpdatedCount()) {
+                $message .= _t(
+                    'ModelAdmin.UPDATEDRECORDS',
+                    "Updated {count} records.",
+                    ['count' => $results->UpdatedCount()]
+                );
+            }
+            if ($results->DeletedCount()) {
+                $message .= _t(
+                    'ModelAdmin.DELETEDRECORDS',
+                    "Deleted {count} records.",
+                    ['count' => $results->DeletedCount()]
+                );
+            }
+            if (!$results->CreatedCount() && !$results->UpdatedCount()) {
+                $message .= _t('ModelAdmin.NOIMPORT', "Nothing to import");
+            }
+        } else {
+            // Or we have a simple result
+            $message = $results;
+        }
+
+        $form->sessionMessage($message, 'good');
+        return $controller->redirectBack();
     }
 
     public static function getDefaultWriter($spreadsheet)

@@ -5,6 +5,8 @@ namespace LeKoala\ExcelImportExport\Extensions;
 use SilverStripe\Forms\Form;
 use SilverStripe\Core\Extension;
 use SilverStripe\Admin\ModelAdmin;
+use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Forms\OptionsetField;
 use LeKoala\ExcelImportExport\ExcelBulkLoader;
 use LeKoala\ExcelImportExport\ExcelImportExport;
 use SilverStripe\Forms\GridField\GridFieldConfig;
@@ -137,6 +139,32 @@ class ModelAdminExcelExtension extends Extension
 
         // We moved the specs into a nice to use download sample button
         $fields->removeByName("SpecFor{$modelName}");
+
+        // We can implement a custom handler
+        $importHandlers = [];
+        if ($modelSNG->hasMethod('listImportHandlers')) {
+            $importHandlers = array_merge([
+                'default' => _t('ExcelImportExport.DefaultHandler', 'Default import handler'),
+            ], $modelSNG->listImportHandlers());
+
+            $supportOnlyUpdate = [];
+            foreach ($importHandlers as $class => $label) {
+                if (class_exists($class) && method_exists($class, 'setOnlyUpdate')) {
+                    $supportOnlyUpdate[] = $class;
+                }
+            }
+
+            $form->Fields()->push($OnlyUpdateRecords = new CheckboxField("OnlyUpdateRecords", _t('ExcelImportExport.OnlyUpdateRecords', "Only update records")));
+            $OnlyUpdateRecords->setAttribute("data-handlers", implode(",", $supportOnlyUpdate));
+        }
+        if (!empty($importHandlers)) {
+            $form->Fields()->push($ImportHandler = new OptionsetField("ImportHandler", _t('ExcelImportExport.PleaseSelectImportHandler', "Please select the import handler"), $importHandlers));
+            // Simply check of this is supported or not for the given handler (if not, disable it)
+            $js = <<<JS
+var cb=document.querySelector('#OnlyUpdateRecords');var accepted=cb.dataset.handlers.split(',');var item=([...this.querySelectorAll('input')].filter((input) => input.checked)[0]); cb.disabled=(item && accepted.includes(item.value)) ? '': 'disabled';
+JS;
+            $ImportHandler->setAttribute("onclick", $js);
+        }
 
         $actions = $form->Actions();
 
