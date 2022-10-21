@@ -1,8 +1,8 @@
 # SilverStripe Excel Import Export module
 
-[![Build Status](https://travis-ci.org/lekoala/silverstripe-excel-import-export.svg?branch=master)](https://travis-ci.org/lekoala/silverstripe-excel-import-export/)
-[![scrutinizer](https://scrutinizer-ci.com/g/lekoala/silverstripe-excel-import-export/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-excel-import-export/)
-[![Code coverage](https://codecov.io/gh/lekoala/silverstripe-excel-import-export/branch/master/graph/badge.svg)](https://codecov.io/gh/lekoala/silverstripe-excel-import-export)
+![Build Status](https://github.com/lekoala/silverstripe-debugbar/actions/workflows/ci.yml/badge.svg)
+[![scrutinizer](https://scrutinizer-ci.com/g/lekoala/silverstripe-debugbar/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-debugbar/)
+[![Code coverage](https://codecov.io/gh/lekoala/silverstripe-debugbar/branch/master/graph/badge.svg)](https://codecov.io/gh/lekoala/silverstripe-debugbar)
 
 ## Intro
 
@@ -32,11 +32,11 @@ You can find the following guide helpful: https://phpspreadsheet.readthedocs.io/
 ## Todo
 
 - More tests and refactoring
-- Allow using another engine like Spout
+- Handle large exports with ease
 
 ## Compatibility
 
-Tested with 4.1
+Tested with ^4.6 and up
 
 ## Maintainer
 
