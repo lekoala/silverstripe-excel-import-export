@@ -103,7 +103,10 @@ class ModelAdminExcelExtension extends Extension
         /** @var ModelAdmin $owner */
         $owner = $this->owner;
         $class = $owner->modelClass;
-        $modelSNG  = singleton($class);
+        $classConfig = $owner->config();
+
+        $modelSNG = singleton($class);
+        $modelConfig = $modelSNG->config();
         $modelName = $modelSNG->i18n_singular_name();
 
         $fields = $form->Fields();
@@ -120,6 +123,12 @@ class ModelAdminExcelExtension extends Extension
             $csvDescription .= '. ' . $downloadSample;
             $file->setDescription($csvDescription);
             $file->getValidator()->setAllowedExtensions(ExcelImportExport::getValidExtensions());
+        }
+
+        // Hide by default, but allow on per class basis (opt-in)
+        if ($classConfig->hide_replace_data && !$modelConfig->show_replace_data) {
+            // This is way too dangerous and customers don't understand what this is most of the time
+            $fields->removeByName("EmptyBeforeImport");
         }
 
         // We moved the specs into a nice to use download sample button
