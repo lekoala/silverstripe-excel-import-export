@@ -83,7 +83,7 @@ class ModelAdminExcelExtension extends Extension
 
         // Rename import button
         $config->removeComponentsByType(GridFieldImportButton::class);
-        if ($this->owner->showImportForm) {
+        if (is_bool($this->owner->showImportForm) && $this->owner->showImportForm || is_array($this->owner->showImportForm) && in_array($class, $this->owner->showImportForm)) {
             $ExcelGridFieldImportButton = new ExcelGridFieldImportButton('buttons-before-left');
             $ExcelGridFieldImportButton->setImportForm($this->owner->ImportForm());
             $ExcelGridFieldImportButton->setModalTitle(_t('ExcelImportExport.IMPORTFROMFILE', 'Import from a file'));
