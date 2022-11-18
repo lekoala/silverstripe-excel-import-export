@@ -2,7 +2,11 @@ language: php
 
 os: linux
 
-dist: focal
+dist: xenial
+
+services:
+  - mysql
+  - postgresql
 
 cache:
   directories:
@@ -16,17 +20,20 @@ env:
 jobs:
   fast_finish: true
   include:
-    - php: 7.2
+    - php: 7.4
       env:
         - DB=PGSQL
         - PDO=1
         - PHPCS_TEST=1
         - PHPUNIT_TEST=1
-    - php: 7.3
+        - PHPUNIT_COVERAGE_TEST=1
+    - php: 8.0
       env:
         - DB=MYSQL
         - PDO=1
-    - php: 7.4
+        - PHPCS_TEST=1
+        - PHPUNIT_TEST=1
+    - php: 8.1
       env:
         - DB=MYSQL
         - PDO=1
@@ -44,21 +51,12 @@ before_script:
   - echo "memory_limit = ${memlimit}" >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
   - echo 'always_populate_raw_post_data = -1' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
 
-  # Init PHP
-  - sudo apt-get -y install zip
-  - sudo apt-get -y install libzip-dev
-  - sudo apt-get -y install php-zip
-  - pecl channel-update pecl.php.net
-  - pecl install zlib zip
-  - phpenv rehash
-  - phpenv config-rm xdebug.ini || true
-  - echo 'memory_limit = 2048M' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
-
   # Install composer dependencies
   - composer validate
   - if [[ $DB == PGSQL ]]; then composer require silverstripe/postgresql:^2 --no-update; fi
   - if [[ $DB == SQLITE ]]; then composer require silverstripe/sqlite3:^2 --no-update; fi
   - if [[ $PHPCS_TEST ]]; then composer global require squizlabs/php_codesniffer:^3 --prefer-dist --no-interaction --no-progress --no-suggest -o; fi
+  - if [[ $PHPUNIT_TEST ]]; then composer require silverstripe/cms --prefer-source --no-interaction --no-progress --no-suggest --no-update; fi
   - composer install --prefer-source --no-interaction --no-progress --no-suggest --optimize-autoloader --verbose --profile
 
   # Log constants to CI for debugging purposes
