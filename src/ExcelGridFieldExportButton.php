@@ -184,7 +184,7 @@ class ExcelGridFieldExportButton implements
                 $func = $this->afterExportCallback;
                 $func();
             }
-            
+
             header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
             header("Cache-Control: post-check=0, pre-check=0", false);
             header("Pragma: no-cache");
@@ -288,6 +288,8 @@ class ExcelGridFieldExportButton implements
             return $excel;
         }
 
+        $exportFormat = ExcelImportExport::config()->export_format;
+
         foreach ($list as $item) {
             if ($this->checkCanView) {
                 $canView = true;
@@ -318,7 +320,12 @@ class ExcelGridFieldExportButton implements
                             // Support only one param for now
                             $value = $item->$func($params[0]);
                         } else {
-                            $value = $gridField->getDataFieldValue($item, $columnSource);
+                            if (array_key_exists($columnSource, $exportFormat)) {
+                                $format = $exportFormat[$columnSource];
+                                $value = $item->dbObject($columnSource)->$format();
+                            } else {
+                                $value = $gridField->getDataFieldValue($item, $columnSource);
+                            }
                         }
                     } else {
                         // We can also use a simple dot notation

@@ -1,16 +1,18 @@
 ---
 Name: excel-import-export
 After:
-  - 'framework/*'
+  - "framework/*"
 ---
 LeKoala\ExcelImportExport\ExcelImportExport:
-  default_writer: 'Xlsx'
+  default_writer: "Xlsx"
   allowed_extensions:
     - csv
     - ods
     - xlsx
     - xls
     - txt
+  export_format:
+    Uuid: Nice
 SilverStripe\Admin\ModelAdmin:
   export_csv: false
   export_excel: true
