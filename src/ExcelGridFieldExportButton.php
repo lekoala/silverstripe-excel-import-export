@@ -76,18 +76,6 @@ class ExcelGridFieldExportButton implements
     protected $afterExportCallback;
 
     /**
-     * Static instance counter to allow multiple instances to work together
-     * @var int
-     */
-    protected static $instances = 0;
-
-    /**
-     * Current instance count
-     * @var int
-     */
-    protected $instance;
-
-    /**
      * @param string $targetFragment The HTML fragment to write the button into
      * @param array $exportColumns The columns to include in the export
      */
@@ -95,13 +83,16 @@ class ExcelGridFieldExportButton implements
     {
         $this->targetFragment = $targetFragment;
         $this->exportColumns = $exportColumns;
-        self::$instances++;
-        $this->instance = self::$instances;
     }
 
-    public function getActionName()
+    /**
+     * @param GridField $gridField
+     * @return string
+     */
+    public function getActionName($gridField)
     {
-        return 'excelexport_' . $this->instance;
+        $name = strtolower($gridField->getName());
+        return 'excelexport_' . $name;
     }
 
     /**
@@ -114,7 +105,7 @@ class ExcelGridFieldExportButton implements
             'Export to Excel'
         );
 
-        $name = $this->getActionName();
+        $name = $this->getActionName($gridField);
 
         $button = new GridField_FormAction(
             $gridField,
@@ -136,7 +127,7 @@ class ExcelGridFieldExportButton implements
      */
     public function getActions($gridField)
     {
-        return array($this->getActionName());
+        return array($this->getActionName($gridField));
     }
 
     public function handleAction(
@@ -155,7 +146,7 @@ class ExcelGridFieldExportButton implements
      */
     public function getURLHandlers($gridField)
     {
-        return array($this->getActionName() => 'handleExport');
+        return array($this->getActionName($gridField) => 'handleExport');
     }
 
     /**
