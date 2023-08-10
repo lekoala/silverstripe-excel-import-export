@@ -38,49 +38,64 @@ class SecurityAdminExcelExtension extends Extension
      * @param Form $form
      * @return GridField
      */
-    protected function getMembersGridField($form)
+    protected function getMembersGridField(Form $form)
     {
-        return $form->Fields()->dataFieldByName('Members');
+        $field = $form->Fields()->dataFieldByName('Members');
+        if (!$field) {
+            $field = $form->Fields()->dataFieldByName('users');
+        }
+        return $field;
     }
 
     /**
      * @param Form $form
      * @return GridField
      */
-    protected function getGroupsGridField($form)
+    protected function getGroupsGridField(Form $form)
     {
-        return $form->Fields()->dataFieldByName('Groups');
+        $field = $form->Fields()->dataFieldByName('Groups');
+        if (!$field) {
+            $field = $form->Fields()->dataFieldByName('groups');
+        }
+        return $field;
     }
 
     public function updateEditForm(Form $form)
     {
-        /* @var $owner SecurityAdmin */
-        $owner       = $this->owner;
-        /* @var $config Config_ForClass */
+        /** @var SecurityAdmin $owner */
+        $owner = $this->owner;
+        /** @var Config_forClass $classConfig */
         $classConfig = $owner->config();
 
         $members = $this->getMembersGridField($form);
-        $membersConfig = $members->getConfig();
-        $groups = $this->getGroupsGridField($form);
-        $groupsConfig = $groups->getConfig();
+        if ($members) {
+            $membersConfig = $members->getConfig();
+            if ($classConfig->allow_import && Permission::check('ADMIN')) {
+                $membersConfig->removeComponentsByType(GridFieldImportButton::class);
+                $ExcelGridFieldImportButton = new ExcelGridFieldImportButton('buttons-before-left');
+                $ExcelGridFieldImportButton->setImportIframe($this->owner->Link('excelmemberimport'));
+                $ExcelGridFieldImportButton->setModalTitle(_t('ExcelImportExport.IMPORTMEMBERSFROMFILE', 'Import members from a file'));
+                $membersConfig->addComponent($ExcelGridFieldImportButton);
+            }
 
-        if ($classConfig->allow_import && Permission::check('ADMIN')) {
-            $membersConfig->removeComponentsByType(GridFieldImportButton::class);
-            $ExcelGridFieldImportButton = new ExcelGridFieldImportButton('buttons-before-left');
-            $ExcelGridFieldImportButton->setImportIframe($this->owner->Link('excelmemberimport'));
-            $ExcelGridFieldImportButton->setModalTitle(_t('ExcelImportExport.IMPORTMEMBERSFROMFILE', 'Import members from a file'));
-            $membersConfig->addComponent($ExcelGridFieldImportButton);
-
-            $groupsConfig->removeComponentsByType(GridFieldImportButton::class);
-            $ExcelGridFieldImportButton = new ExcelGridFieldImportButton('buttons-before-left');
-            $ExcelGridFieldImportButton->setImportIframe($this->owner->Link('excelgroupimport'));
-            $ExcelGridFieldImportButton->setModalTitle(_t('ExcelImportExport.IMPORTGROUPSFROMFILE', 'Import groups from a file'));
-            $groupsConfig->addComponent($ExcelGridFieldImportButton);
+            // Export features
+            $this->addExportButton($members, $classConfig);
         }
 
-        // Export features
-        $this->addExportButton($members, $classConfig);
-        $this->addExportButton($groups, $classConfig);
+        $groups = $this->getGroupsGridField($form);
+        if ($groups) {
+            $groupsConfig = $groups->getConfig();
+
+            if ($classConfig->allow_import && Permission::check('ADMIN')) {
+                $groupsConfig->removeComponentsByType(GridFieldImportButton::class);
+                $ExcelGridFieldImportButton = new ExcelGridFieldImportButton('buttons-before-left');
+                $ExcelGridFieldImportButton->setImportIframe($this->owner->Link('excelgroupimport'));
+                $ExcelGridFieldImportButton->setModalTitle(_t('ExcelImportExport.IMPORTGROUPSFROMFILE', 'Import groups from a file'));
+                $groupsConfig->addComponent($ExcelGridFieldImportButton);
+            }
+
+            $this->addExportButton($groups, $classConfig);
+        }
     }
 
     public function downloadsample()
