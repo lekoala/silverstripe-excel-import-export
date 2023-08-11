@@ -43,9 +43,3 @@ SilverStripe\Admin\ModelAdmin:
   hide_replace_data: true
   extensions:
     - LeKoala\ExcelImportExport\Extensions\ModelAdminExcelExtension
-SilverStripe\Admin\SecurityAdmin:
-  export_csv: false
-  export_excel: true
-  allow_import: true
-  extensions:
-    - LeKoala\ExcelImportExport\Extensions\SecurityAdminExcelExtension

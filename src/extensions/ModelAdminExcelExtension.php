@@ -14,6 +14,9 @@ use SilverStripe\Forms\GridField\GridFieldExportButton;
 use SilverStripe\Forms\GridField\GridFieldImportButton;
 use LeKoala\ExcelImportExport\ExcelGridFieldExportButton;
 use LeKoala\ExcelImportExport\ExcelGridFieldImportButton;
+use LeKoala\ExcelImportExport\ExcelGroupBulkLoader;
+use LeKoala\ExcelImportExport\ExcelMemberBulkLoader;
+use SilverStripe\Admin\SecurityAdmin;
 
 /**
  * Extends {@link ModelAdmin}. to bind new forms and features
@@ -38,14 +41,22 @@ class ModelAdminExcelExtension extends Extension
      */
     protected function updateModelImporters()
     {
-        /* @var $owner ModelAdmin */
+        /** @var ModelAdmin $owner */
         $owner = $this->owner;
         $config = $this->owner->config();
 
         // Overwrite model imports
         $importerClasses = $config->get('model_importers');
 
-        if (is_null($importerClasses)) {
+        if ($owner instanceof SecurityAdmin) {
+            $importerClasses = [
+                "users" => ExcelMemberBulkLoader::class,
+                "SilverStripe\Security\Member" => ExcelMemberBulkLoader::class,
+                "groups" => ExcelGroupBulkLoader::class,
+                "SilverStripe\Security\Group" => ExcelGroupBulkLoader::class,
+            ];
+            $config->set('model_importers', $importerClasses);
+        } elseif (is_null($importerClasses)) {
             $models = $owner->getManagedModels();
             foreach (array_keys($models) as $modelName) {
                 $importerClasses[$modelName] = ExcelBulkLoader::class;
