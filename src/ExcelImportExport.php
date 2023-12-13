@@ -297,7 +297,7 @@ class ExcelImportExport
         $col = 1;
         $allFields = ExcelImportExport::importFieldsForClass($class);
         foreach ($allFields as $header) {
-            $sheet->setCellValueByColumnAndRow($col, $row, $header);
+            $sheet->setCellValue([$col, $row], $header);
             $col++;
         }
         return $spreadsheet;

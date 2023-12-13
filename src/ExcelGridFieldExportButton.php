@@ -64,6 +64,11 @@ class ExcelGridFieldExportButton implements
     protected $checkCanView = true;
 
     /**
+     * @var bool
+     */
+    protected $isLimited = true;
+
+    /**
      *
      * @var array
      */
@@ -232,7 +237,7 @@ class ExcelGridFieldExportButton implements
             }
 
             foreach ($headers as $header) {
-                $sheet->setCellValueByColumnAndRow($col, $row, $header);
+                $sheet->setCellValue([$col, $row], $header);
                 $col++;
             }
 
@@ -268,8 +273,9 @@ class ExcelGridFieldExportButton implements
         }
 
         $list = $items;
-        if ($items instanceof DataList) {
-            $list = $items->limit(ExcelImportExport::$limit_exports);
+        $limit = ExcelImportExport::$limit_exports;
+        if ($items instanceof DataList && $this->isLimited && $limit > 0) {
+            $list = $items->limit($limit);
             if (!empty($this->listFilters)) {
                 $list = $list->filter($this->listFilters);
             }
@@ -333,7 +339,7 @@ class ExcelGridFieldExportButton implements
                     }
                 }
 
-                $sheet->setCellValueByColumnAndRow($col, $row, $value);
+                $sheet->setCellValue([$col, $row], $value);
                 $col++;
             }
 
@@ -492,6 +498,25 @@ class ExcelGridFieldExportButton implements
     public function setAfterExportCallback(callable $afterExportCallback)
     {
         $this->afterExportCallback = $afterExportCallback;
+        return $this;
+    }
+
+    /**
+     * Get the value of isLimited
+     */
+    public function getIsLimited(): bool
+    {
+        return $this->isLimited;
+    }
+
+    /**
+     * Set the value of isLimited
+     *
+     * @param bool $isLimited
+     */
+    public function setIsLimited(bool $isLimited)
+    {
+        $this->isLimited = $isLimited;
         return $this;
     }
 }
