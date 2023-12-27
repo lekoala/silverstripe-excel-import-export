@@ -3,17 +3,13 @@
 namespace LeKoala\ExcelImportExport;
 
 use Exception;
+use LeKoala\SpreadCompat\SpreadCompat;
 use SilverStripe\Dev\BulkLoader;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Environment;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use SilverStripe\Dev\BulkLoader_Result;
-use PhpOffice\PhpSpreadsheet\Reader\Csv;
-use PhpOffice\PhpSpreadsheet\Reader\IReader;
 
 /**
- * Use PHPSpreadsheet to expand BulkLoader file format support
- *
  * @author Koala
  */
 class ExcelBulkLoader extends BulkLoader
@@ -54,7 +50,7 @@ class ExcelBulkLoader extends BulkLoader
     /**
      * @var array
      */
-    protected $db = array();
+    protected $db = [];
 
     /**
      * Type of file if not able to determine through uploaded file
@@ -94,6 +90,7 @@ class ExcelBulkLoader extends BulkLoader
 
         // get all instances of the to be imported data object
         if ($this->deleteExistingRecords) {
+            // warning !!! this removes the records ONE BY ONE it can be REALLY SLOW
             DataObject::get($this->objectClass)->removeAll();
         }
 
@@ -130,15 +127,6 @@ class ExcelBulkLoader extends BulkLoader
     }
 
     /**
-     * @param IReader $reader
-     * @return Csv
-     */
-    protected function getCsvReader(IReader $reader)
-    {
-        return $reader;
-    }
-
-    /**
      * @param string $filepath
      * @param boolean $preview
      */
@@ -147,32 +135,20 @@ class ExcelBulkLoader extends BulkLoader
         $results = new BulkLoader_Result();
         $ext = $this->getUploadFileExtension();
 
-        $readerType = ExcelImportExport::getReaderForExtension($ext);
-        $reader = IOFactory::createReader($readerType);
-        $reader->setReadDataOnly(true);
-        if ($readerType == 'Csv') {
-            // @link https://phpspreadsheet.readthedocs.io/en/latest/topics/reading-and-writing-to-file/#setting-csv-options_1
-            $reader = $this->getCsvReader($reader);
-            $reader->setDelimiter($this->delimiter);
-            $reader->setEnclosure($this->enclosure);
-        }
-        $data = array();
-        if ($reader->canRead($filepath)) {
-            $excel = $reader->load($filepath);
-            $data = $excel->getActiveSheet()->toArray(null, true, false, false);
-        } else {
+        if (!is_readable($filepath)) {
             throw new Exception("Cannot read $filepath");
         }
 
-        $headers = array();
-
+        $opts = [
+            'separator' => $this->delimiter,
+            'enclosure' => $this->enclosure,
+            'extension' => $ext,
+        ];
         if ($this->hasHeaderRow) {
-            $headers = array_shift($data);
-            $headers = array_map('trim', $headers);
-            $headers = array_filter($headers);
+            $opts['assoc'] = true;
         }
 
-        $headersCount = count($headers);
+        $data = SpreadCompat::read($filepath, ...$opts);
 
         $objectClass = $this->objectClass;
         $objectConfig = $objectClass::config();
@@ -180,7 +156,6 @@ class ExcelBulkLoader extends BulkLoader
         $this->singleton = singleton($objectClass);
 
         foreach ($data as $row) {
-            $row = $this->mergeRowWithHeaders($row, $headers, $headersCount);
             $this->processRecord(
                 $row,
                 $this->columnMap,

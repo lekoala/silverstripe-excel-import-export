@@ -3,6 +3,8 @@
 namespace LeKoala\ExcelImportExport;
 
 use Exception;
+use Generator;
+use LeKoala\SpreadCompat\SpreadCompat;
 use SilverStripe\Forms\Form;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\ORM\DataObject;
@@ -16,6 +18,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use SilverStripe\Core\Config\Configurable;
 use PhpOffice\PhpSpreadsheet\Reader\IReader;
+use PhpOffice\PhpSpreadsheet\Writer\IWriter;
 
 /**
  * Support class for the module
@@ -63,7 +66,7 @@ class ExcelImportExport
     public static function allFieldsForClass($class)
     {
         $dataClasses = ClassInfo::dataClassesFor($class);
-        $fields      = array();
+        $fields      = [];
         $dataObjectSchema = DataObject::getSchema();
         foreach ($dataClasses as $dataClass) {
             $dataFields = $dataObjectSchema->databaseFields($dataClass);
@@ -150,18 +153,17 @@ class ExcelImportExport
         $sng = singleton($class);
         if ($sng->hasMethod('sampleExcelFile')) {
             $spreadsheet = $sng->sampleExcelFile();
-
-            // We have a file, output directly
-            if (is_string($spreadsheet) && is_file($spreadsheet)) {
-                self::outputHeaders($fileName);
-                readfile($spreadsheet);
-                exit();
-            }
         }
         if (!$spreadsheet) {
             $spreadsheet = self::generateDefaultSampleFile($class);
         }
-
+        // We have a file, output directly
+        if (is_string($spreadsheet) && is_file($spreadsheet)) {
+            self::outputHeaders($fileName);
+            readfile($spreadsheet);
+            exit();
+        }
+        // PHPSpreadsheet is required for this
         $writer = self::getDefaultWriter($spreadsheet);
         self::outputHeaders($fileName);
         $writer->save('php://output');
@@ -251,7 +253,7 @@ class ExcelImportExport
         return $controller->redirectBack();
     }
 
-    public static function getDefaultWriter($spreadsheet)
+    public static function getDefaultWriter(Spreadsheet $spreadsheet): IWriter
     {
         return IOFactory::createWriter($spreadsheet, self::config()->default_writer);
     }
@@ -283,24 +285,19 @@ class ExcelImportExport
      * Generate a default import file with all field name
      *
      * @param string $class
-     * @return Spreadsheet
+     * @return string
      */
     public static function generateDefaultSampleFile($class)
     {
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->getProperties()
-            ->setCreator('SilverStripe')
-            ->setTitle("Sample file for $class");
-        $sheet = $spreadsheet->getActiveSheet();
-
-        $row = 1;
-        $col = 1;
+        $opts = [
+            'creator' => "SilverStripe"
+        ];
         $allFields = ExcelImportExport::importFieldsForClass($class);
-        foreach ($allFields as $header) {
-            $sheet->setCellValue([$col, $row], $header);
-            $col++;
-        }
-        return $spreadsheet;
+        $tmpname = SpreadCompat::getTempFilename();
+        SpreadCompat::write([
+            $allFields
+        ], $tmpname, ...$opts);
+        return $tmpname;
     }
 
     /**
@@ -318,7 +315,7 @@ class ExcelImportExport
     }
 
     /**
-     * Extracted from PHPSpreadhseet
+     * Extracted from PHPSpreadsheet
      *
      * @param string $ext
      * @return string
@@ -372,23 +369,13 @@ class ExcelImportExport
     /**
      * Save content of an array to a file
      *
-     * @param array $data
+     * @param iterable $data
      * @param string $filepath
-     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      * @return void
      */
     public static function arrayToFile($data, $filepath)
     {
-        $spreadsheet = new Spreadsheet;
-        $spreadsheet->setActiveSheetIndex(0);
-        $spreadsheet->getActiveSheet()->fromArray($data);
-
-        $ext = pathinfo($filepath, PATHINFO_EXTENSION);
-
-        // Writer is the same as read : Csv, Xlsx...
-        $writerType = self::getReaderForExtension($ext);
-        $writer = IOFactory::createWriter($spreadsheet, $writerType);
-        $writer->save($filepath);
+        SpreadCompat::write($data, $filepath);
     }
 
     /**
@@ -424,6 +411,32 @@ class ExcelImportExport
         return $reader;
     }
 
+    public static function excelColumnRange(string $lower = 'A', string $upper = 'ZZ'): Generator
+    {
+        ++$upper;
+        for ($i = $lower; $i !== $upper; ++$i) {
+            yield $i;
+        }
+    }
+
+    /**
+     * String from column index.
+     *
+     * @param int $index Column index (1 = A)
+     * @param $fallback
+     * @return string
+     */
+    public static function getLetter($index)
+    {
+        foreach (self::excelColumnRange() as $letter) {
+            $index--;
+            if ($index <= 0) {
+                return $letter;
+            }
+        }
+    }
+
+
     /**
      * Convert a file to an array
      *
@@ -449,7 +462,7 @@ class ExcelImportExport
             // Does not apply to CSV
             $reader->setReadDataOnly(true);
         }
-        $data = array();
+        $data = [];
         if ($reader->canRead($filepath)) {
             $excel = $reader->load($filepath);
             $data = $excel->getActiveSheet()->toArray(null, true, false, false);
@@ -480,7 +493,7 @@ class ExcelImportExport
         if ($sheetname) {
             $reader->setLoadSheetsOnly($sheetname);
         }
-        $data = array();
+        $data = [];
         if ($reader->canRead($filepath)) {
             $excel = $reader->load($filepath);
             if ($onlyExisting) {
@@ -544,7 +557,7 @@ class ExcelImportExport
         if ($sheetname) {
             $reader->setLoadSheetsOnly($sheetname);
         }
-        $data = array();
+        $data = [];
         if ($reader->canRead($filepath)) {
             $excel = $reader->load($filepath);
             $data = [];

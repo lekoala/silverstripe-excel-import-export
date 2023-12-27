@@ -2,11 +2,9 @@
 
 namespace LeKoala\ExcelImportExport;
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
+use InvalidArgumentException;
 use SilverStripe\Assets\FileNameFilter;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use SilverStripe\Forms\GridField\GridField;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use SilverStripe\Forms\GridField\GridFieldPaginator;
 use SilverStripe\Forms\GridField\GridField_FormAction;
 use SilverStripe\Forms\GridField\GridField_URLHandler;
@@ -14,7 +12,7 @@ use SilverStripe\Forms\GridField\GridFieldFilterHeader;
 use SilverStripe\Forms\GridField\GridField_HTMLProvider;
 use SilverStripe\Forms\GridField\GridFieldSortableHeader;
 use SilverStripe\Forms\GridField\GridField_ActionProvider;
-use Exception;
+use LeKoala\SpreadCompat\SpreadCompat;
 use SilverStripe\ORM\DataList;
 
 /**
@@ -26,59 +24,37 @@ class ExcelGridFieldExportButton implements
     GridField_URLHandler
 {
     /**
-     * @var array Map of a property name on the exported objects, with values being the column title in the file.
+     * Map of a property name on the exported objects, with values being the column title in the file.
      * Note that titles are only used when {@link $hasHeader} is set to TRUE.
      */
-    protected $exportColumns;
+    protected ?array $exportColumns;
 
     /**
      * Fragment to write the button to
      */
-    protected $targetFragment;
+    protected string $targetFragment;
 
-    /**
-     * @var boolean
-     */
-    protected $hasHeader = true;
+    protected bool $hasHeader = true;
 
-    /**
-     * @var string
-     */
-    protected $exportType = 'xlsx';
+    protected string $exportType = 'xlsx';
 
-    /**
-     * @var string
-     */
-    protected $exportName = null;
+    protected ?string $exportName = null;
 
-    /**
-     *
-     * @var string
-     */
-    protected $buttonTitle = null;
+    protected ?string $buttonTitle = null;
 
-    /**
-     *
-     * @var bool
-     */
-    protected $checkCanView = true;
+    protected bool $checkCanView = true;
 
-    /**
-     * @var bool
-     */
-    protected $isLimited = true;
+    protected bool $isLimited = true;
 
-    /**
-     *
-     * @var array
-     */
-    protected $listFilters = array();
+    protected array $listFilters = [];
 
     /**
      *
      * @var callable
      */
     protected $afterExportCallback;
+
+    protected bool $ignoreFilters = false;
 
     /**
      * @param string $targetFragment The HTML fragment to write the button into
@@ -161,73 +137,106 @@ class ExcelGridFieldExportButton implements
     {
         $now = Date("Ymd_Hi");
 
-        if ($excel = $this->generateExportFileData($gridField)) {
-            $ext = $this->exportType;
-            $name = $this->exportName;
-            $fileName = "$name-$now.$ext";
+        $this->updateExportName($gridField);
 
-            switch ($ext) {
-                case 'xls':
-                    $writer = IOFactory::createWriter($excel, 'Xls');
-                    break;
-                case 'xlsx':
-                    $writer = IOFactory::createWriter($excel, 'Xlsx');
-                    break;
-                default:
-                    throw new Exception("$ext is not supported");
-            }
-            if ($this->afterExportCallback) {
-                $func = $this->afterExportCallback;
-                $func();
-            }
+        $data = $this->generateExportFileData($gridField);
 
-            header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-            header("Cache-Control: post-check=0, pre-check=0", false);
-            header("Pragma: no-cache");
-            header('Content-type: application/vnd.ms-excel');
-            header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        $ext = $this->exportType;
+        $name = $this->exportName;
+        $fileName = "$name-$now.$ext";
 
-            $writer->save('php://output');
-            exit();
+        if ($this->afterExportCallback) {
+            $func = $this->afterExportCallback;
+            $func();
         }
+
+        $opts = [
+            'extension' => $ext,
+        ];
+
+        if ($ext != 'csv') {
+            $end = ExcelImportExport::getLetter(count($this->getRealExportColumns($gridField)));
+            $opts['creator'] = "SilverStripe";
+            $opts['autofilter'] = "A1:{$end}1";
+        }
+
+        SpreadCompat::output($data, $fileName, ...$opts);
+        exit();
+    }
+
+
+    /**
+     * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
+     */
+    protected function updateExportName($gridField)
+    {
+        $filter = new FileNameFilter;
+        if ($this->exportName) {
+            $this->exportName = $filter->filter($this->exportName);
+        } else {
+            $class = $gridField->getModelClass();
+            $singl = singleton($class);
+            $plural = $class ? $singl->i18n_plural_name() : '';
+
+            $this->exportName = $filter->filter('export-' . $plural);
+        }
+    }
+
+    /**
+     * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
+     * @return DataList|ArrayList
+     */
+    protected function retrieveList($gridField)
+    {
+        // Remove GridFieldPaginator as we're going to export the entire list.
+        $gridField->getConfig()->removeComponentsByType(GridFieldPaginator::class);
+
+        /** @var DataList|ArrayList $items */
+        $items = $gridField->getManipulatedList();
+
+        // Keep filters
+        if (!$this->ignoreFilters) {
+            foreach ($gridField->getConfig()->getComponents() as $component) {
+                if ($component instanceof GridFieldFilterHeader || $component instanceof GridFieldSortableHeader) {
+                    $items = $component->getManipulatedData($gridField, $items);
+                }
+            }
+        }
+
+        $list = $items;
+        $limit = ExcelImportExport::$limit_exports;
+        if ($list instanceof DataList) {
+            if ($this->isLimited && $limit > 0) {
+                $list = $list->limit($limit);
+            }
+            if (!empty($this->listFilters)) {
+                $list = $list->filter($this->listFilters);
+            }
+        }
+
+        return $list;
+    }
+
+    /**
+     * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
+     */
+    protected function getRealExportColumns($gridField)
+    {
+        $class = $gridField->getModelClass();
+        return ($this->exportColumns) ? $this->exportColumns : ExcelImportExport::exportFieldsForClass($class);
     }
 
     /**
      * Generate export fields for Excel.
      *
-     * @param GridField $gridField
-     * @return Spreadsheet
+     * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
      */
-    public function generateExportFileData($gridField)
+    public function generateExportFileData($gridField): iterable
     {
-        $class = $gridField->getModelClass();
-        $columns = ($this->exportColumns) ? $this->exportColumns : ExcelImportExport::exportFieldsForClass($class);
-
-        $singl = singleton($class);
-
-        $plural = $class ? $singl->i18n_plural_name() : '';
-
-        $filter = new FileNameFilter;
-        if ($this->exportName) {
-            $this->exportName = $filter->filter($this->exportName);
-        } else {
-            $this->exportName = $filter->filter('export-' . $plural);
-        }
-
-        $excel = new Spreadsheet();
-        $excelProperties = $excel->getProperties();
-        $excelProperties->setTitle($this->exportName);
-
-        $sheet = $excel->getActiveSheet();
-        if ($plural) {
-            $sheet->setTitle($plural);
-        }
-
-        $row = 1;
-        $col = 1;
+        $columns = $this->getRealExportColumns($gridField);
 
         if ($this->hasHeader) {
-            $headers = array();
+            $headers = [];
 
             // determine the headers. If a field is callable (e.g. anonymous function) then use the
             // source name as the header instead
@@ -236,58 +245,19 @@ class ExcelGridFieldExportButton implements
                     ? $columnSource : $columnHeader;
             }
 
-            foreach ($headers as $header) {
-                $sheet->setCellValue([$col, $row], $header);
-                $col++;
-            }
-
-            $endcol = Coordinate::stringFromColumnIndex($col - 1);
-            $sheet->setAutoFilter("A1:{$endcol}1");
-            $sheet->getStyle("A1:{$endcol}1")->getFont()->setBold(true);
-
-            $col = 1;
-            $row++;
+            yield $headers;
         }
 
-        // Autosize
-        $cellIterator = $sheet->getRowIterator()->current()->getCellIterator();
-        try {
-            $cellIterator->setIterateOnlyExistingCells(true);
-        } catch (Exception $ex) {
-            // Ignore exceptions
-        }
-        foreach ($cellIterator as $cell) {
-            $sheet->getColumnDimension($cell->getColumn())->setAutoSize(true);
-        }
-
-        //Remove GridFieldPaginator as we're going to export the entire list.
-        $gridField->getConfig()->removeComponentsByType(GridFieldPaginator::class);
-
-        $items = $gridField->getManipulatedList();
-
-        // @todo should GridFieldComponents change behaviour based on whether others are available in the config?
-        foreach ($gridField->getConfig()->getComponents() as $component) {
-            if ($component instanceof GridFieldFilterHeader || $component instanceof GridFieldSortableHeader) {
-                $items = $component->getManipulatedData($gridField, $items);
-            }
-        }
-
-        $list = $items;
-        $limit = ExcelImportExport::$limit_exports;
-        if ($items instanceof DataList && $this->isLimited && $limit > 0) {
-            $list = $items->limit($limit);
-            if (!empty($this->listFilters)) {
-                $list = $list->filter($this->listFilters);
-            }
-        }
+        $list = $this->retrieveList($gridField);
 
         if (!$list) {
-            return $excel;
+            return;
         }
 
         $exportFormat = ExcelImportExport::config()->export_format;
 
         foreach ($list as $item) {
+            // This can be really slow for large exports depending on how canView is implemented
             if ($this->checkCanView) {
                 $canView = true;
                 if ($item->hasMethod('canView') && !$item->canView()) {
@@ -297,6 +267,10 @@ class ExcelGridFieldExportButton implements
                     continue;
                 }
             }
+
+            $dataRow = [];
+
+            // Loop and transforms records as needed
             foreach ($columns as $columnSource => $columnHeader) {
                 if (!is_string($columnHeader) && is_callable($columnHeader)) {
                     if ($item->hasMethod($columnSource)) {
@@ -339,19 +313,15 @@ class ExcelGridFieldExportButton implements
                     }
                 }
 
-                $sheet->setCellValue([$col, $row], $value);
-                $col++;
+                $dataRow[] = $value;
             }
 
             if ($item->hasMethod('destroy')) {
                 $item->destroy();
             }
 
-            $col = 1;
-            $row++;
+            yield $dataRow;
         }
-
-        return $excel;
     }
 
     /**
@@ -397,10 +367,13 @@ class ExcelGridFieldExportButton implements
     }
 
     /**
-     * @param string xlsx (default) or xls
+     * @param string xlsx (default), xls or csv
      */
     public function setExportType($exportType)
     {
+        if (!in_array($exportType, ['xls', 'xlsx', 'csv'])) {
+            throw new InvalidArgumentException("Export type must be one of : xls, xlsx, csv");
+        }
         $this->exportType = $exportType;
         return $this;
     }
@@ -517,6 +490,25 @@ class ExcelGridFieldExportButton implements
     public function setIsLimited(bool $isLimited)
     {
         $this->isLimited = $isLimited;
+        return $this;
+    }
+
+    /**
+     * Get the value of ignoreFilters
+     */
+    public function getIgnoreFilters(): bool
+    {
+        return $this->ignoreFilters;
+    }
+
+    /**
+     * Set the value of ignoreFilters
+     *
+     * @param bool $ignoreFilters
+     */
+    public function setIgnoreFilters(bool $ignoreFilters): self
+    {
+        $this->ignoreFilters = $ignoreFilters;
         return $this;
     }
 }

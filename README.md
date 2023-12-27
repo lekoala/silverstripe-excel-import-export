@@ -7,7 +7,7 @@
 ## Intro
 
 Replace all csv import/export functionalities by Excel.
-Excel support is provided by PHPSpreadsheet.
+Excel support is provided by spread-compat package which can use under the hood simple xlsx, php spreadsheet or openspout.
 
 These changes apply automatically to SecurityAdmin and ModelAdmin through extension.
 
@@ -51,12 +51,6 @@ This require some custom code on your `ModelAdmin` class that could look like th
 The import handlers only need to implement a `load` method that needs to return a result string
 or a `BulkLoader_Result` object.
 
-## Migrate your old code
-
-Previous version was using PHPExcel. This version use PHPSpreadhsheet. Any code using PHPExcel should
-be migrated.
-You can find the following guide helpful: https://phpspreadsheet.readthedocs.io/en/develop/topics/migration-from-PHPExcel/
-
 ## Todo
 
 - More tests and refactoring
@@ -64,7 +58,7 @@ You can find the following guide helpful: https://phpspreadsheet.readthedocs.io/
 
 ## Compatibility
 
-Tested with ^4.6 and up
+Tested with ^5 and up
 
 ## Maintainer
 

@@ -19,7 +19,7 @@ class ExcelMemberBulkLoader extends ExcelBulkLoader
      *
      * @var array
      */
-    protected $groups = array();
+    protected $groups = [];
 
     public $duplicateChecks = array(
         'Email' => 'Email',
@@ -43,7 +43,7 @@ class ExcelMemberBulkLoader extends ExcelBulkLoader
     ) {
         $objID = parent::processRecord($record, $columnMap, $results, $preview);
 
-        $_cache_groupByCode = array();
+        $_cache_groupByCode = [];
 
         // Add to predefined groups
         /** @var Member $member */
