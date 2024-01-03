@@ -38,7 +38,8 @@ Only:
   moduleexists: silverstripe/admin
 ---
 SilverStripe\Admin\ModelAdmin:
-  export_csv: false
+  use_framework_csv: false
+  export_csv: true
   export_excel: true
   hide_replace_data: true
   extensions:

@@ -81,10 +81,12 @@ class ExcelGridFieldExportButton implements
      */
     public function getHTMLFragments($gridField)
     {
-        $title = $this->buttonTitle ? $this->buttonTitle : _t(
-            'ExcelImportExport.XLSEXPORT',
-            'Export to Excel'
+        $defaultTitle = _t(
+            'ExcelImportExport.FORMATEXPORT',
+            'Export to {format}',
+            ['format' => $this->exportType]
         );
+        $title = $this->buttonTitle ? $this->buttonTitle : $defaultTitle;
 
         $name = $this->getActionName($gridField);
 

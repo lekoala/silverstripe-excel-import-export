@@ -78,10 +78,19 @@ class ModelAdminExcelExtension extends Extension
         $class = $owner->modelClass;
         $classConfig = $owner->config();
 
-        // Add/remove csv export (hide by default)
+        // Add/remove csv export. Replace with our own implementation if necessary.
         if ($classConfig->export_csv) {
             $GridFieldExportButton = $this->getGridFieldExportButton($config);
-            $GridFieldExportButton->setExportColumns(ExcelImportExport::exportFieldsForClass($class));
+            if ($GridFieldExportButton) {
+                if ($classConfig->use_framework_csv) {
+                    $GridFieldExportButton->setExportColumns(ExcelImportExport::exportFieldsForClass($class));
+                } else {
+                    $config->removeComponentsByType(GridFieldExportButton::class);
+                    $ExcelGridFieldExportButton = new ExcelGridFieldExportButton('buttons-before-left');
+                    $ExcelGridFieldExportButton->setExportType('csv');
+                    $config->addComponent($ExcelGridFieldExportButton);
+                }
+            }
         } else {
             $config->removeComponentsByType(GridFieldExportButton::class);
         }

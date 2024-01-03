@@ -3,6 +3,7 @@ en:
     BtnImport: 'Import from file'
     DefaultHandler: 'Default import handler'
     DownloadSample: 'Download sample file'
+    FORMATEXPORT: 'Export to {format}'
     GroupImportHelp1: 'For supported columns, please check the sample file.'
     GroupImportHelp2: 'Existing groups are matched by their unique <em>Code</em> value, and updated with any new values from the imported file.'
     GroupImportHelp3: 'Group hierarchies can be created by using a <em>ParentCode</em> column.'
@@ -23,3 +24,8 @@ en:
     VALIDEXTENSIONS: 'Allowed extensions: {extensions}'
     XLSEXPORT: 'Export to Excel'
     XLSIMPORT: Import
+  ModelAdmin:
+    DELETEDRECORDS: 'Deleted {count} records.'
+    IMPORTEDRECORDS: 'Imported {count} records.'
+    NOIMPORT: 'Nothing to import'
+    UPDATEDRECORDS: 'Updated {count} records.'
