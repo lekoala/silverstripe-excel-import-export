@@ -15,11 +15,12 @@ use SilverStripe\Dev\BulkLoader_Result;
 class ExcelBulkLoader extends BulkLoader
 {
     /**
-     * Delimiter character (Default: comma).
+     * Delimiter character
+     * We use auto detection for csv because we can't ask the user what he is using
      *
      * @var string
      */
-    public $delimiter = ',';
+    public $delimiter = 'auto';
 
     /**
      * Enclosure character (Default: doublequote)
@@ -82,6 +83,12 @@ class ExcelBulkLoader extends BulkLoader
         if (is_array($filepath)) {
             $this->uploadFile = $filepath;
             $filepath = $filepath['tmp_name'];
+        }
+        if (is_string($filepath)) {
+            $ext = pathinfo($filepath, PATHINFO_EXTENSION);
+            if ($ext == 'csv' || $ext == 'xlsx') {
+                $this->fileType = $ext;
+            }
         }
 
         // upload is resource intensive
@@ -188,7 +195,7 @@ class ExcelBulkLoader extends BulkLoader
         // find existing object, or create new one
         $existingObj = $this->findExistingObject($record, $columnMap);
 
-        /* @var $obj DataObject */
+        /** @var DataObject $obj */
         $obj = $existingObj ? $existingObj : new $class();
 
         // first run: find/create any relations and store them on the object

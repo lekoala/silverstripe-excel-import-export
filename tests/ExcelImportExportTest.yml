@@ -1,0 +1,27 @@
+SilverStripe\Security\Group:
+  editors:
+    Code: EDITORS
+    Title: Editors
+  admins:
+    Code: ADMINISTRATORS
+    Title: Administrators
+  securityadmins:
+    Code: SECURITY_ADMINS
+    Title: Security Admins
+SilverStripe\Security\Permission:
+  admins:
+    Code: ADMIN
+    Group: =>SilverStripe\Security\Group.admins
+  editors:
+    Code: CMS_ACCESS_CMSMain
+    Group: =>SilverStripe\Security\Group.editors
+  securityadmins:
+    Code: CMS_ACCESS_SecurityAdmin
+    Group: =>SilverStripe\Security\Group.securityadmins
+SilverStripe\Security\Member:
+  admin:
+    Email: admin@silverstripe.org
+    Groups: =>SilverStripe\Security\Group.admins
+  securityadmin:
+    Email: security@silverstripe.org
+    Groups: =>SilverStripe\Security\Group.securityadmins
