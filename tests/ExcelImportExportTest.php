@@ -48,5 +48,30 @@ class ExcelImportExportTest extends SapphireTest
 
         $this->assertEquals($count + 1, $newCount);
         $this->assertEquals($membersCount + 1, $newMembersCount, "Groups are not updated");
+
+        // format is handled according to file extension
+        $loader = new ExcelMemberBulkLoader();
+        $result = $loader->load(__DIR__ . '/data/members.xlsx');
+
+        $this->assertEquals(1, $result->CreatedCount());
+        $this->assertEquals(0, $result->UpdatedCount());
+
+        $newCount = Member::get()->count();
+        $newMembersCount = Group::get()->filter('Code', 'Administrators')->first()->Members()->count();
+
+        $this->assertEquals($count + 2, $newCount);
+        $this->assertEquals($membersCount + 2, $newMembersCount, "Groups are not updated");
+
+        // Loading again does nothing new
+        $result = $loader->load(__DIR__ . '/data/members.xlsx');
+
+        $this->assertEquals(0, $result->CreatedCount());
+        $this->assertEquals(1, $result->UpdatedCount());
+
+        $newCount = Member::get()->count();
+        $newMembersCount = Group::get()->filter('Code', 'Administrators')->first()->Members()->count();
+
+        $this->assertEquals($count + 2, $newCount);
+        $this->assertEquals($membersCount + 2, $newMembersCount, "Groups are not updated");
     }
 }
