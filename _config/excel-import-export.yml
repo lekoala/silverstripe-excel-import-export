@@ -4,15 +4,14 @@ After:
   - "#corecache"
 ---
 LeKoala\ExcelImportExport\ExcelImportExport:
-  default_writer: "Xlsx"
+  default_extension: "xlsx" # could be csv
   allowed_extensions:
     - csv
-    - ods
     - xlsx
     - xls
-    - txt
   export_format:
     Uuid: Nice
+  sanitize_xls_chars: '=' # use -@=+ for more secure on older software
 SilverStripe\Security\Member:
   unimported_fields:
     - TempIDHash

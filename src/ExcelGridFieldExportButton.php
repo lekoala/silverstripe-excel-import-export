@@ -2,6 +2,7 @@
 
 namespace LeKoala\ExcelImportExport;
 
+use Generator;
 use InvalidArgumentException;
 use SilverStripe\Assets\FileNameFilter;
 use SilverStripe\Forms\GridField\GridField;
@@ -55,6 +56,8 @@ class ExcelGridFieldExportButton implements
     protected $afterExportCallback;
 
     protected bool $ignoreFilters = false;
+
+    protected bool $sanitizeXls = true;
 
     /**
      * @param string $targetFragment The HTML fragment to write the button into
@@ -137,7 +140,7 @@ class ExcelGridFieldExportButton implements
      */
     public function handleExport($gridField, $request = null)
     {
-        $now = Date("Ymd_Hi");
+        $now = date("Ymd_Hi");
 
         $this->updateExportName($gridField);
 
@@ -162,12 +165,14 @@ class ExcelGridFieldExportButton implements
             $opts['autofilter'] = "A1:{$end}1";
         }
 
+        SpreadCompat::$preferredCsvAdapter = SpreadCompat::NATIVE;
         SpreadCompat::output($data, $fileName, ...$opts);
         exit();
     }
 
 
     /**
+     * Make sure export name is a valid file name
      * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
      */
     protected function updateExportName($gridField)
@@ -233,7 +238,7 @@ class ExcelGridFieldExportButton implements
      *
      * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
      */
-    public function generateExportFileData($gridField): iterable
+    public function generateExportFileData($gridField): Generator
     {
         $columns = $this->getRealExportColumns($gridField);
 
@@ -243,8 +248,11 @@ class ExcelGridFieldExportButton implements
             // determine the headers. If a field is callable (e.g. anonymous function) then use the
             // source name as the header instead
             foreach ($columns as $columnSource => $columnHeader) {
-                $headers[] = (!is_string($columnHeader) && is_callable($columnHeader))
-                    ? $columnSource : $columnHeader;
+                if (is_array($columnHeader) && array_key_exists('title', $columnHeader ?? [])) {
+                    $headers[] = $columnHeader['title'];
+                } else {
+                    $headers[] = (!is_string($columnHeader) && is_callable($columnHeader)) ? $columnSource : $columnHeader;
+                }
             }
 
             yield $headers;
@@ -256,7 +264,13 @@ class ExcelGridFieldExportButton implements
             return;
         }
 
-        $exportFormat = ExcelImportExport::config()->export_format;
+        $sanitize_xls_chars = ExcelImportExport::config()->sanitize_xls_chars ?? "=";
+        $sanitize_xls_chars_len = strlen($sanitize_xls_chars);
+
+        // Auto format using DBField methods based on column name
+        $export_format = ExcelImportExport::config()->export_format;
+
+        $sanitize = $this->sanitizeXls && $sanitize_xls_chars && $this->exportType == "csv";
 
         foreach ($list as $item) {
             // This can be really slow for large exports depending on how canView is implemented
@@ -293,8 +307,8 @@ class ExcelGridFieldExportButton implements
                             // Support only one param for now
                             $value = $item->$func($params[0]);
                         } else {
-                            if (array_key_exists($columnSource, $exportFormat)) {
-                                $format = $exportFormat[$columnSource];
+                            if (array_key_exists($columnSource, $export_format)) {
+                                $format = $export_format[$columnSource];
                                 $value = $item->dbObject($columnSource)->$format();
                             } else {
                                 $value = $gridField->getDataFieldValue($item, $columnSource);
@@ -311,6 +325,21 @@ class ExcelGridFieldExportButton implements
                                 $relObjField = $parts[1];
                                 $value = $value->$relObjField;
                             }
+                        }
+                    }
+                }
+
+                // @link https://owasp.org/www-community/attacks/CSV_Injection
+                // [SS-2017-007] Sanitise XLS executable column values with a leading tab
+                if ($sanitize) {
+                    // If we have only one char we can make it simpler
+                    if ($sanitize_xls_chars_len === 1) {
+                        if ($value && $value[0] === $sanitize_xls_chars) {
+                            $value = "\t" . $value;
+                        }
+                    } else {
+                        if (preg_match('/^[' . $sanitize_xls_chars . '].*/', $value ?? '')) {
+                            $value = "\t" . $value;
                         }
                     }
                 }
@@ -511,6 +540,25 @@ class ExcelGridFieldExportButton implements
     public function setIgnoreFilters(bool $ignoreFilters): self
     {
         $this->ignoreFilters = $ignoreFilters;
+        return $this;
+    }
+
+    /**
+     * Get the value of sanitizeXls
+     */
+    public function getSanitizeXls(): bool
+    {
+        return $this->sanitizeXls;
+    }
+
+    /**
+     * Set the value of sanitizeXls
+     *
+     * @param bool $sanitizeXls
+     */
+    public function setSanitizeXls(bool $sanitizeXls): self
+    {
+        $this->sanitizeXls = $sanitizeXls;
         return $this;
     }
 }

@@ -4,6 +4,7 @@ namespace LeKoala\ExcelImportExport;
 
 use Exception;
 use Generator;
+use LeKoala\SpreadCompat\Common\Options;
 use LeKoala\SpreadCompat\SpreadCompat;
 use SilverStripe\Forms\Form;
 use SilverStripe\Core\ClassInfo;
@@ -19,6 +20,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use SilverStripe\Core\Config\Configurable;
 use PhpOffice\PhpSpreadsheet\Reader\IReader;
 use PhpOffice\PhpSpreadsheet\Writer\IWriter;
+use SilverStripe\Assets\FileNameFilter;
 
 /**
  * Support class for the module
@@ -147,26 +149,37 @@ class ExcelImportExport
      */
     public static function sampleFileForClass($class)
     {
-        $fileName = "sample-file-for-$class.xlsx";
+        $ext = self::getDefaultExtension();
+        $filter = new FileNameFilter();
+        $fileName = $filter->filter("sample-file-for-$class.$ext");
         $spreadsheet = null;
 
         $sng = singleton($class);
+
+        // Deprecated
         if ($sng->hasMethod('sampleExcelFile')) {
             $spreadsheet = $sng->sampleExcelFile();
-        }
-        if (!$spreadsheet) {
-            $spreadsheet = self::generateDefaultSampleFile($class);
-        }
-        // We have a file, output directly
-        if (is_string($spreadsheet) && is_file($spreadsheet)) {
+            // PHPSpreadsheet is required for this
+            $writer = self::getDefaultWriter($spreadsheet);
             self::outputHeaders($fileName);
-            readfile($spreadsheet);
+            $writer->save('php://output');
             exit();
         }
-        // PHPSpreadsheet is required for this
-        $writer = self::getDefaultWriter($spreadsheet);
-        self::outputHeaders($fileName);
-        $writer->save('php://output');
+
+        if ($sng->hasMethod('sampleImportData')) {
+            $data = $sng->sampleImportData();
+        } else {
+            // Simply output the default headers
+            $data = [ExcelImportExport::importFieldsForClass($class)];
+        }
+
+        if (!is_iterable($data)) {
+            throw new Exception("`sampleImportData` must return an iterable");
+        }
+
+        $options = new Options();
+        $options->creator = "SilverStripe";
+        SpreadCompat::output($data, $fileName, $options);
         exit();
     }
 
@@ -253,9 +266,21 @@ class ExcelImportExport
         return $controller->redirectBack();
     }
 
+    public static function getDefaultExtension()
+    {
+        return self::config()->default_extension ?? 'xlsx';
+    }
+
+    /**
+     * Get default writer for PHPSpreadsheet if installed
+     *
+     * @param Spreadsheet $spreadsheet
+     * @return IWriter
+     */
     public static function getDefaultWriter(Spreadsheet $spreadsheet): IWriter
     {
-        return IOFactory::createWriter($spreadsheet, self::config()->default_writer);
+        $writer = ucfirst(self::getDefaultExtension());
+        return IOFactory::createWriter($spreadsheet, $writer);
     }
 
     /**
@@ -268,6 +293,9 @@ class ExcelImportExport
     {
         $ext = pathinfo($fileName, PATHINFO_EXTENSION);
         switch ($ext) {
+            case 'csv':
+                header('Content-Type: text/csv');
+                break;
             case 'xlsx':
                 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
                 break;
@@ -283,7 +311,7 @@ class ExcelImportExport
 
     /**
      * Generate a default import file with all field name
-     *
+     * @deprecated
      * @param string $class
      * @return string
      */
@@ -392,13 +420,11 @@ class ExcelImportExport
         if (is_file($filepath)) {
             unlink($filepath);
         }
-        $fp = fopen($filepath, 'w');
-        // UTF 8 fix
-        fprintf($fp, "\xEF\xBB\xBF");
-        foreach ($data as $row) {
-            fputcsv($fp, $row, $delimiter, $enclosure, $escapeChar);
-        }
-        return fclose($fp);
+        $options = new Options();
+        $options->separator = $delimiter;
+        $options->enclosure = $enclosure;
+        $options->escape = $escapeChar;
+        SpreadCompat::write($data, $filepath, $options);
     }
 
 

@@ -6,13 +6,14 @@
 
 ## Intro
 
-Replace all csv import/export functionalities by Excel.
+Add import/export functionalities in xlsx format.
+Also replace built in csv import/export to have the same consistent behaviour.
 Excel support is provided by `spread-compat` package which can use under the hood simple xlsx, php spreadsheet or openspout.
 
 These changes apply automatically to SecurityAdmin and ModelAdmin through extension.
 
 To make import easier, import specs are replaced by a sample file that is ready to use for the user.
-This import file can be further customised by implementing `sampleExcelFile` method.
+This import file can be further customised by implementing `sampleImportData` that should return an array of rows.
 
 ## Configure exported fields
 
