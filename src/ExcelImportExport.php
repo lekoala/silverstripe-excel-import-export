@@ -279,6 +279,9 @@ class ExcelImportExport
      */
     public static function getDefaultWriter(Spreadsheet $spreadsheet): IWriter
     {
+        if (!self::isPhpSpreadsheetAvailable()) {
+            throw new Exception("PHPSpreadsheet is not installed");
+        }
         $writer = ucfirst(self::getDefaultExtension());
         return IOFactory::createWriter($spreadsheet, $writer);
     }
@@ -380,6 +383,11 @@ class ExcelImportExport
         }
     }
 
+    public static function isPhpSpreadsheetAvailable()
+    {
+        return class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class);
+    }
+
     /**
      * If you exported separated files, you can merge them in one big file
      * Requires PHPSpreadsheet
@@ -388,6 +396,9 @@ class ExcelImportExport
      */
     public static function mergeExcelFiles($files)
     {
+        if (!self::isPhpSpreadsheetAvailable()) {
+            throw new Exception("PHPSpreadsheet is not installed");
+        }
         $merged = new Spreadsheet;
         $merged->removeSheetByIndex(0);
         foreach ($files as $filename) {
@@ -444,16 +455,6 @@ class ExcelImportExport
         SpreadCompat::write($data, $filepath, $options);
     }
 
-
-    /**
-     * @param IReader $reader
-     * @return Csv
-     */
-    protected static function getCsvReader(IReader $reader)
-    {
-        return $reader;
-    }
-
     public static function excelColumnRange(string $lower = 'A', string $upper = 'ZZ'): Generator
     {
         ++$upper;
@@ -479,7 +480,6 @@ class ExcelImportExport
         }
     }
 
-
     /**
      * Convert a file to an array
      *
@@ -494,24 +494,15 @@ class ExcelImportExport
         if ($ext === null) {
             $ext = pathinfo($filepath, PATHINFO_EXTENSION);
         }
-        $readerType = self::getReaderForExtension($ext);
-        $reader = IOFactory::createReader($readerType);
-        if ($readerType == 'Csv') {
-            // @link https://phpspreadsheet.readthedocs.io/en/latest/topics/reading-and-writing-to-file/#setting-csv-options_1
-            $reader = self::getCsvReader($reader);
-            $reader->setDelimiter($delimiter);
-            $reader->setEnclosure($enclosure);
-        } else {
-            // Does not apply to CSV
-            $reader->setReadDataOnly(true);
-        }
-        $data = [];
-        if ($reader->canRead($filepath)) {
-            $excel = $reader->load($filepath);
-            $data = $excel->getActiveSheet()->toArray(null, true, false, false);
-        } else {
-            throw new Exception("Cannot read $filepath");
-        }
+
+        $data = iterator_to_array(
+            SpreadCompat::read(
+                $filepath,
+                extension: $ext,
+                separator: $delimiter,
+                enclosure: $enclosure
+            )
+        );
         return $data;
     }
 
@@ -526,6 +517,9 @@ class ExcelImportExport
      */
     public static function excelToArray($filepath, $sheetname = null, $onlyExisting = true, $ext = null)
     {
+        if (!self::isPhpSpreadsheetAvailable()) {
+            throw new Exception("PHPSpreadsheet is not installed");
+        }
         if ($ext === null) {
             $ext = pathinfo($filepath, PATHINFO_EXTENSION);
         }
@@ -575,6 +569,9 @@ class ExcelImportExport
         if (!is_numeric($v)) {
             return '';
         }
+        if (!self::isPhpSpreadsheetAvailable()) {
+            throw new Exception("PHPSpreadsheet is not installed");
+        }
         return date('Y-m-d', Date::excelToTimestamp($v));
     }
 
@@ -591,6 +588,9 @@ class ExcelImportExport
      */
     public static function excelToAssocArray($filepath, $sheetname = null, $ext = null)
     {
+        if (!self::isPhpSpreadsheetAvailable()) {
+            throw new Exception("PHPSpreadsheet is not installed");
+        }
         if ($ext === null) {
             $ext = pathinfo($filepath, PATHINFO_EXTENSION);
         }
