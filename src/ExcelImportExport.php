@@ -381,6 +381,23 @@ class ExcelImportExport
     }
 
     /**
+     * If you exported separated files, you can merge them in one big file
+     * Requires PHPSpreadsheet
+     * @param array $files
+     * @return Spreadsheet
+     */
+    public static function mergeExcelFiles($files)
+    {
+        $merged = new Spreadsheet;
+        $merged->removeSheetByIndex(0);
+        foreach ($files as $filename) {
+            $remoteExcel = IOFactory::load($filename);
+            $merged->addExternalSheet($remoteExcel->getActiveSheet());
+        }
+        return $merged;
+    }
+
+    /**
      * Get valid extensions
      *
      * @return array
