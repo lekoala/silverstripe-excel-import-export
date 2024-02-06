@@ -38,7 +38,7 @@ class ExcelBulkLoader extends BulkLoader
 
     /**
      * The uploaded file infos
-     * @var array
+     * @var array<mixed>
      */
     protected $uploadFile = null;
 
@@ -49,7 +49,7 @@ class ExcelBulkLoader extends BulkLoader
     protected $singleton = null;
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $db = [];
 

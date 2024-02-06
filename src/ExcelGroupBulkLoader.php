@@ -13,19 +13,32 @@ use SilverStripe\Security\Permission;
  */
 class ExcelGroupBulkLoader extends ExcelBulkLoader
 {
+    /**
+     * @var array<string,string>
+     */
     public $duplicateChecks = array(
         'Code' => 'Code',
     );
 
+    /**
+     * @param class-string $objectClass
+     */
     public function __construct($objectClass = null)
     {
         if (!$objectClass) {
             $objectClass = Group::class;
         }
-
         parent::__construct($objectClass);
     }
 
+    /**
+     * @param array<string,mixed> $record
+     * @param array<string,string> $columnMap
+     * @param mixed $results
+     * @param boolean $preview
+     * @param boolean $makeRelations
+     * @return int
+     */
     protected function processRecord(
         $record,
         $columnMap,

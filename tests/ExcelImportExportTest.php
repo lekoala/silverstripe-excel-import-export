@@ -19,23 +19,25 @@ class ExcelImportExportTest extends SapphireTest
      */
     protected static $fixture_file = 'ExcelImportExportTest.yml';
 
-    public function testGetAllFields()
+    public function testGetAllFields(): void
     {
         $fields = ExcelImportExport::allFieldsForClass(Member::class);
         $this->assertNotEmpty($fields);
     }
 
-    public function testExportedFields()
+    public function testExportedFields(): void
     {
         $fields = ExcelImportExport::exportFieldsForClass(Member::class);
         $this->assertNotEmpty($fields);
         $this->assertNotContains('Password', $fields);
     }
 
-    public function testCanImportMembers()
+    public function testCanImportMembers(): void
     {
         $count = Member::get()->count();
-        $membersCount = Group::get()->filter('Code', 'Administrators')->first()->Members()->count();
+        /** @var Group $firstGroup */
+        $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
+        $membersCount = $firstGroup->Members()->count();
 
         // ; separator is properly detected thanks to auto separator feature
         $loader = new ExcelMemberBulkLoader();
@@ -44,7 +46,9 @@ class ExcelImportExportTest extends SapphireTest
         $this->assertEquals(1, $result->CreatedCount());
 
         $newCount = Member::get()->count();
-        $newMembersCount = Group::get()->filter('Code', 'Administrators')->first()->Members()->count();
+        /** @var Group $firstGroup */
+        $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
+        $newMembersCount = $firstGroup->Members()->count();
 
         $this->assertEquals($count + 1, $newCount);
         $this->assertEquals($membersCount + 1, $newMembersCount, "Groups are not updated");
@@ -57,7 +61,9 @@ class ExcelImportExportTest extends SapphireTest
         $this->assertEquals(0, $result->UpdatedCount());
 
         $newCount = Member::get()->count();
-        $newMembersCount = Group::get()->filter('Code', 'Administrators')->first()->Members()->count();
+        /** @var Group $firstGroup */
+        $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
+        $newMembersCount = $firstGroup->Members()->count();
 
         $this->assertEquals($count + 2, $newCount);
         $this->assertEquals($membersCount + 2, $newMembersCount, "Groups are not updated");
@@ -69,7 +75,9 @@ class ExcelImportExportTest extends SapphireTest
         $this->assertEquals(1, $result->UpdatedCount());
 
         $newCount = Member::get()->count();
-        $newMembersCount = Group::get()->filter('Code', 'Administrators')->first()->Members()->count();
+        /** @var Group $firstGroup */
+        $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
+        $newMembersCount = $firstGroup->Members()->count();
 
         $this->assertEquals($count + 2, $newCount);
         $this->assertEquals($membersCount + 2, $newMembersCount, "Groups are not updated");

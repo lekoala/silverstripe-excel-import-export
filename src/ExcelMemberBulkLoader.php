@@ -14,26 +14,38 @@ use SilverStripe\Security\Member;
 class ExcelMemberBulkLoader extends ExcelBulkLoader
 {
     /**
-     * Array of {@link Group} records. Import into a specific group.
+     * Import into a specific group.
      * Is overruled by any "Groups" columns in the import.
      *
-     * @var array
+     * @var array<Group>
      */
     protected $groups = [];
 
+    /**
+     * @var array<string,string>
+     */
     public $duplicateChecks = array(
         'Email' => 'Email',
     );
 
+    /**
+     * @param class-string $objectClass
+     */
     public function __construct($objectClass = null)
     {
         if (!$objectClass) {
             $objectClass = Member::class;
         }
-
         parent::__construct($objectClass);
     }
-
+    /**
+     * @param array<string,mixed> $record
+     * @param array<string,string> $columnMap
+     * @param mixed $results
+     * @param boolean $preview
+     * @param boolean $makeRelations
+     * @return int
+     */
     protected function processRecord(
         $record,
         $columnMap,
@@ -79,7 +91,8 @@ class ExcelMemberBulkLoader extends ExcelBulkLoader
     }
 
     /**
-     * @param array $groups
+     * @param array<Group> $groups
+     * @return void
      */
     public function setGroups($groups)
     {
@@ -87,7 +100,7 @@ class ExcelMemberBulkLoader extends ExcelBulkLoader
     }
 
     /**
-     * @return array
+     * @return array<Group>
      */
     public function getGroups()
     {

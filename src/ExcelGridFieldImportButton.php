@@ -2,6 +2,7 @@
 
 namespace LeKoala\ExcelImportExport;
 
+use SilverStripe\Forms\Form;
 use SilverStripe\View\SSViewer;
 use SilverStripe\View\ArrayData;
 use SilverStripe\Forms\GridField\GridField;
@@ -17,13 +18,14 @@ class ExcelGridFieldImportButton extends GridFieldImportButton
      * We need to override the getHTMLFragments to allow changing the title
      *
      * @param GridField $gridField
-     * @return array
+     * @return array<int|string,mixed>
      */
     public function getHTMLFragments($gridField)
     {
         $modalID = $gridField->ID() . '_ImportModal';
 
         // Check for form message prior to rendering form (which clears session messages)
+        /** @var Form|null $form */
         $form = $this->getImportForm();
         $hasMessage = $form && $form->getMessage();
 
@@ -43,7 +45,7 @@ class ExcelGridFieldImportButton extends GridFieldImportButton
             'import',
             _t('ExcelImportExport.XLSIMPORT', 'Import'),
             'import',
-            null
+            []
         );
         $button
             ->addExtraClass('btn btn-secondary font-icon-upload btn--icon-large action_import')

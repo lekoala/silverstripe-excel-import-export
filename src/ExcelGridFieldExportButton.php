@@ -4,6 +4,11 @@ namespace LeKoala\ExcelImportExport;
 
 use Generator;
 use InvalidArgumentException;
+use SilverStripe\ORM\DataList;
+use SilverStripe\ORM\ArrayList;
+use SilverStripe\ORM\SS_List;
+use SilverStripe\Control\HTTPRequest;
+use LeKoala\SpreadCompat\SpreadCompat;
 use SilverStripe\Assets\FileNameFilter;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldPaginator;
@@ -13,8 +18,6 @@ use SilverStripe\Forms\GridField\GridFieldFilterHeader;
 use SilverStripe\Forms\GridField\GridField_HTMLProvider;
 use SilverStripe\Forms\GridField\GridFieldSortableHeader;
 use SilverStripe\Forms\GridField\GridField_ActionProvider;
-use LeKoala\SpreadCompat\SpreadCompat;
-use SilverStripe\ORM\DataList;
 
 /**
  * Adds an "Export list" button to the bottom of a {@link GridField}.
@@ -27,6 +30,7 @@ class ExcelGridFieldExportButton implements
     /**
      * Map of a property name on the exported objects, with values being the column title in the file.
      * Note that titles are only used when {@link $hasHeader} is set to TRUE.
+     * @var array<int|string,mixed>
      */
     protected ?array $exportColumns;
 
@@ -47,11 +51,14 @@ class ExcelGridFieldExportButton implements
 
     protected bool $isLimited = true;
 
+    /**
+     * @var array<mixed>
+     */
     protected array $listFilters = [];
 
     /**
      *
-     * @var callable
+     * @var null|callable
      */
     protected $afterExportCallback;
 
@@ -61,7 +68,7 @@ class ExcelGridFieldExportButton implements
 
     /**
      * @param string $targetFragment The HTML fragment to write the button into
-     * @param array $exportColumns The columns to include in the export
+     * @param array<string> $exportColumns The columns to include in the export
      */
     public function __construct($targetFragment = "after", $exportColumns = null)
     {
@@ -81,6 +88,7 @@ class ExcelGridFieldExportButton implements
 
     /**
      * Place the export button in a <p> tag below the field
+     * @return array<string|int,mixed>
      */
     public function getHTMLFragments($gridField)
     {
@@ -98,7 +106,7 @@ class ExcelGridFieldExportButton implements
             $name,
             $title,
             $name,
-            null
+            []
         );
         $button->addExtraClass('btn btn-secondary no-ajax font-icon-down-circled action_export');
         $button->setForm($gridField->getForm());
@@ -110,12 +118,21 @@ class ExcelGridFieldExportButton implements
 
     /**
      * export is an action button
+     * @param GridField $gridField
+     * @return array<string>
      */
     public function getActions($gridField)
     {
         return array($this->getActionName($gridField));
     }
 
+    /**
+     * @param GridField $gridField
+     * @param string $actionName
+     * @param array<mixed> $arguments
+     * @param array<mixed> $data
+     * @return void
+     */
     public function handleAction(
         GridField $gridField,
         $actionName,
@@ -123,12 +140,14 @@ class ExcelGridFieldExportButton implements
         $data
     ) {
         if (in_array($actionName, $this->getActions($gridField))) {
-            return $this->handleExport($gridField);
+            $this->handleExport($gridField);
         }
     }
 
     /**
      * it is also a URL
+     * @param GridField $gridField
+     * @return array<string,string>
      */
     public function getURLHandlers($gridField)
     {
@@ -137,6 +156,9 @@ class ExcelGridFieldExportButton implements
 
     /**
      * Handle the export, for both the action button and the URL
+     * @param GridField $gridField
+     * @param HTTPRequest $request
+     * @return void
      */
     public function handleExport($gridField, $request = null)
     {
@@ -174,6 +196,7 @@ class ExcelGridFieldExportButton implements
     /**
      * Make sure export name is a valid file name
      * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
+     * @return void
      */
     protected function updateExportName($gridField)
     {
@@ -191,7 +214,7 @@ class ExcelGridFieldExportButton implements
 
     /**
      * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
-     * @return DataList|ArrayList
+     * @return DataList|ArrayList|SS_List|null
      */
     protected function retrieveList($gridField)
     {
@@ -205,6 +228,7 @@ class ExcelGridFieldExportButton implements
         if (!$this->ignoreFilters) {
             foreach ($gridField->getConfig()->getComponents() as $component) {
                 if ($component instanceof GridFieldFilterHeader || $component instanceof GridFieldSortableHeader) {
+                    //@phpstan-ignore-next-line
                     $items = $component->getManipulatedData($gridField, $items);
                 }
             }
@@ -220,12 +244,12 @@ class ExcelGridFieldExportButton implements
                 $list = $list->filter($this->listFilters);
             }
         }
-
         return $list;
     }
 
     /**
      * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
+     * @return array<int|string,mixed|null>
      */
     protected function getRealExportColumns($gridField)
     {
@@ -248,6 +272,7 @@ class ExcelGridFieldExportButton implements
             // determine the headers. If a field is callable (e.g. anonymous function) then use the
             // source name as the header instead
             foreach ($columns as $columnSource => $columnHeader) {
+                //@phpstan-ignore-next-line
                 if (is_array($columnHeader) && array_key_exists('title', $columnHeader ?? [])) {
                     $headers[] = $columnHeader['title'];
                 } else {
@@ -356,7 +381,7 @@ class ExcelGridFieldExportButton implements
     }
 
     /**
-     * @return array
+     * @return array<int|string,mixed>
      */
     public function getExportColumns()
     {
@@ -364,7 +389,8 @@ class ExcelGridFieldExportButton implements
     }
 
     /**
-     * @param array
+     * @param array<int|string,mixed> $cols
+     * @return $this
      */
     public function setExportColumns($cols)
     {
@@ -381,7 +407,8 @@ class ExcelGridFieldExportButton implements
     }
 
     /**
-     * @param boolean
+     * @param boolean $bool
+     * @return $this
      */
     public function setHasHeader($bool)
     {
@@ -398,7 +425,8 @@ class ExcelGridFieldExportButton implements
     }
 
     /**
-     * @param string xlsx (default), xls or csv
+     * @param string $exportType xlsx (default), xls or csv
+     * @return $this
      */
     public function setExportType($exportType)
     {
@@ -467,7 +495,7 @@ class ExcelGridFieldExportButton implements
 
     /**
      *
-     * @return array
+     * @return array<mixed>
      */
     public function getListFilters()
     {
@@ -476,7 +504,7 @@ class ExcelGridFieldExportButton implements
 
     /**
      *
-     * @param array $listFilters
+     * @param array<mixed> $listFilters
      * @return ExcelGridFieldExportButton
      */
     public function setListFilters($listFilters)
@@ -517,6 +545,7 @@ class ExcelGridFieldExportButton implements
      * Set the value of isLimited
      *
      * @param bool $isLimited
+     * @return self
      */
     public function setIsLimited(bool $isLimited)
     {

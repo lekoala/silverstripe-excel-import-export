@@ -63,7 +63,7 @@ class ExcelImportExport
      * Get all db fields for a given dataobject class
      *
      * @param string $class
-     * @return array
+     * @return array<string,string>
      */
     public static function allFieldsForClass($class)
     {
@@ -81,7 +81,7 @@ class ExcelImportExport
      * Get fields that should be exported by default for a class
      *
      * @param string $class
-     * @return array
+     * @return array<int|string,mixed>
      */
     public static function exportFieldsForClass($class)
     {
@@ -116,7 +116,7 @@ class ExcelImportExport
      * Get fields that can be imported by default for a class
      *
      * @param string $class
-     * @return array
+     * @return array<string,string>
      */
     public static function importFieldsForClass($class)
     {
@@ -184,7 +184,7 @@ class ExcelImportExport
     }
 
     /**
-     * @param Controller $controller
+     * @param \SilverStripe\Admin\ModelAdmin $controller
      * @return bool
      */
     public static function checkImportForm($controller)
@@ -194,7 +194,7 @@ class ExcelImportExport
         }
         $modelClass = $controller->getModelClass();
         if (is_array($controller->showImportForm)) {
-            /** @var array $valid */
+            /** @var array<string> $valid */
             $valid = $controller->showImportForm;
             if (!in_array($modelClass, $valid)) {
                 return false;
@@ -219,11 +219,10 @@ class ExcelImportExport
         $name = $_FILES['_CsvFile']['name'];
         $inst = new $handler();
 
-        if (!empty($_POST['OnlyUpdateRecords']) && method_exists($handler, 'setOnlyUpdate')) {
+        if (!empty($_POST['OnlyUpdateRecords']) && method_exists($inst, 'setOnlyUpdate')) {
             $inst->setOnlyUpdate(true);
         }
-
-        /** @var BulkLoader_Result|string $results  */
+        /** @var ExcelLoaderInterface $inst */
         try {
             $results = $inst->load($file, $name);
         } catch (Exception $e) {
@@ -266,6 +265,9 @@ class ExcelImportExport
         return $controller->redirectBack();
     }
 
+    /**
+     * @return string
+     */
     public static function getDefaultExtension()
     {
         return self::config()->default_extension ?? 'xlsx';
@@ -284,6 +286,20 @@ class ExcelImportExport
         }
         $writer = ucfirst(self::getDefaultExtension());
         return IOFactory::createWriter($spreadsheet, $writer);
+    }
+
+    /**
+     * Get default reader for PHPSpreadsheet if installed
+     *
+     * @return IReader
+     */
+    public static function getDefaultReader(): IReader
+    {
+        if (!self::isPhpSpreadsheetAvailable()) {
+            throw new Exception("PHPSpreadsheet is not installed");
+        }
+        $writer = ucfirst(self::getDefaultExtension());
+        return IOFactory::createReader($writer);
     }
 
     /**
@@ -383,6 +399,9 @@ class ExcelImportExport
         }
     }
 
+    /**
+     * @return boolean
+     */
     public static function isPhpSpreadsheetAvailable()
     {
         return class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class);
@@ -391,7 +410,7 @@ class ExcelImportExport
     /**
      * If you exported separated files, you can merge them in one big file
      * Requires PHPSpreadsheet
-     * @param array $files
+     * @param array<string> $files
      * @return Spreadsheet
      */
     public static function mergeExcelFiles($files)
@@ -411,7 +430,7 @@ class ExcelImportExport
     /**
      * Get valid extensions
      *
-     * @return array
+     * @return array<string>
      */
     public static function getValidExtensions()
     {
@@ -425,7 +444,7 @@ class ExcelImportExport
     /**
      * Save content of an array to a file
      *
-     * @param iterable $data
+     * @param iterable<array<mixed>> $data
      * @param string $filepath
      * @return void
      */
@@ -437,11 +456,12 @@ class ExcelImportExport
     /**
      * Fast saving to csv
      *
-     * @param array $data
+     * @param array<mixed> $data
      * @param string $filepath
      * @param string $delimiter
      * @param string $enclosure
      * @param string $escapeChar
+     * @return void
      */
     public static function arrayToCsv($data, $filepath, $delimiter = ',', $enclosure = '"', $escapeChar = '\\')
     {
@@ -467,10 +487,10 @@ class ExcelImportExport
      * String from column index.
      *
      * @param int $index Column index (1 = A)
-     * @param $fallback
+     * @param string $fallback
      * @return string
      */
-    public static function getLetter($index)
+    public static function getLetter($index, $fallback = 'A')
     {
         foreach (self::excelColumnRange() as $letter) {
             $index--;
@@ -478,6 +498,7 @@ class ExcelImportExport
                 return $letter;
             }
         }
+        return $fallback;
     }
 
     /**
@@ -487,7 +508,7 @@ class ExcelImportExport
      * @param string $delimiter (csv only)
      * @param string $enclosure (csv only)
      * @param string $ext if extension cannot be deducted from filepath (eg temp files)
-     * @return array
+     * @return array<mixed>
      */
     public static function fileToArray($filepath, $delimiter = ';', $enclosure = '', $ext = null)
     {
@@ -511,9 +532,9 @@ class ExcelImportExport
      *
      * @param string $filepath
      * @param string $sheetname Load a specific worksheet by name
-     * @param true $onlyExisting Avoid reading empty columns
+     * @param bool $onlyExisting Avoid reading empty columns
      * @param string $ext if extension cannot be deducted from filepath (eg temp files)
-     * @return array
+     * @return array<mixed>
      */
     public static function excelToArray($filepath, $sheetname = null, $onlyExisting = true, $ext = null)
     {
@@ -561,16 +582,19 @@ class ExcelImportExport
 
     /**
      * @link https://stackoverflow.com/questions/44304795/how-to-retrieve-date-from-table-cell-using-phpspreadsheet#44304796
-     * @param int $v
+     * @param int|string|null|float $v
      * @return string
      */
     public static function convertExcelDate($v)
     {
-        if (!is_numeric($v)) {
+        if ($v === null || !is_numeric($v)) {
             return '';
         }
         if (!self::isPhpSpreadsheetAvailable()) {
             throw new Exception("PHPSpreadsheet is not installed");
+        }
+        if (is_string($v)) {
+            $v = intval($v);
         }
         return date('Y-m-d', Date::excelToTimestamp($v));
     }
@@ -584,7 +608,7 @@ class ExcelImportExport
      * @param string $filepath
      * @param string $sheetname Load a specific worksheet by name
      * @param string $ext if extension cannot be deducted from filepath (eg temp files)
-     * @return array
+     * @return array<mixed>
      */
     public static function excelToAssocArray($filepath, $sheetname = null, $ext = null)
     {

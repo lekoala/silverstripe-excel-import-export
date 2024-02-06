@@ -25,10 +25,16 @@ use SilverStripe\Admin\SecurityAdmin;
  */
 class ModelAdminExcelExtension extends Extension
 {
+    /**
+     * @var array<string>
+     */
     private static $allowed_actions = array(
         'downloadsample'
     );
 
+    /**
+     * @return void
+     */
     public function onAfterInit()
     {
         $this->updateModelImporters();
@@ -43,7 +49,8 @@ class ModelAdminExcelExtension extends Extension
     {
         /** @var ModelAdmin $owner */
         $owner = $this->owner;
-        $config = $this->owner->config();
+        //@phpstan-ignore-next-line
+        $config = $this->owner::config();
 
         // Overwrite model imports
         $importerClasses = $config->get('model_importers');
@@ -66,16 +73,25 @@ class ModelAdminExcelExtension extends Extension
         }
     }
 
+    /**
+     * @return void
+     */
     public function downloadsample()
     {
-        ExcelImportExport::sampleFileForClass($this->owner->modelClass);
+        /** @var \SilverStripe\Admin\ModelAdmin $owner */
+        $owner = $this->owner;
+        ExcelImportExport::sampleFileForClass($owner->getModelClass());
     }
 
+    /**
+     * @param GridFieldConfig $config
+     * @return void
+     */
     public function updateGridFieldConfig(GridFieldConfig $config)
     {
         /** @var ModelAdmin $owner */
         $owner = $this->owner;
-        $class = $owner->modelClass;
+        $class = $owner->getModelClass();
         $classConfig = $owner->config();
 
         // Add/remove csv export. Replace with our own implementation if necessary.
@@ -103,28 +119,45 @@ class ModelAdminExcelExtension extends Extension
 
         // Rename import button
         $config->removeComponentsByType(GridFieldImportButton::class);
-        if (is_bool($this->owner->showImportForm) && $this->owner->showImportForm || is_array($this->owner->showImportForm) && in_array($class, $this->owner->showImportForm)) {
-            $ExcelGridFieldImportButton = new ExcelGridFieldImportButton('buttons-before-left');
-            $ExcelGridFieldImportButton->setImportForm($this->owner->ImportForm());
-            $ExcelGridFieldImportButton->setModalTitle(_t('ExcelImportExport.IMPORTFROMFILE', 'Import from a file'));
-            $config->addComponent($ExcelGridFieldImportButton);
+        if ((is_bool($owner->showImportForm)
+                && $owner->showImportForm)
+            ||
+            (is_array($owner->showImportForm)
+                && in_array($class, $owner->showImportForm))
+        ) {
+            $importForm = $owner->ImportForm();
+            if ($importForm) {
+                $ExcelGridFieldImportButton = new ExcelGridFieldImportButton('buttons-before-left');
+                $ExcelGridFieldImportButton->setImportForm($importForm);
+                $ExcelGridFieldImportButton->setModalTitle(_t('ExcelImportExport.IMPORTFROMFILE', 'Import from a file'));
+                $config->addComponent($ExcelGridFieldImportButton);
+            }
         }
     }
 
     /**
-     * @param GridFieldConfig $config
-     * @return GridFieldExportButton
+     * @param \SilverStripe\Forms\GridField\GridFieldConfig $config
+     * @return GridFieldExportButton|null
      */
     protected function getGridFieldExportButton($config)
     {
-        return $config->getComponentByType(GridFieldExportButton::class);
+        /** @var GridFieldExportButton|null $comp */
+        $comp = $config->getComponentByType(GridFieldExportButton::class);
+        if ($comp) {
+            return $comp;
+        }
+        return null;
     }
 
+    /**
+     * @param Form $form
+     * @return void
+     */
     public function updateImportForm(Form $form)
     {
         /** @var ModelAdmin $owner */
         $owner = $this->owner;
-        $class = $owner->modelClass;
+        $class = $owner->getModelClass();
         $classConfig = $owner->config();
 
         $modelSNG = singleton($class);
@@ -139,6 +172,7 @@ class ModelAdminExcelExtension extends Extension
             'Download sample file'
         ) . '</a>';
 
+        /** @var \SilverStripe\Forms\FileField|null $file */
         $file = $fields->dataFieldByName('_CsvFile');
         if ($file) {
             $csvDescription = ExcelImportExport::getValidExtensionsText();
