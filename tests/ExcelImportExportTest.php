@@ -2,6 +2,7 @@
 
 namespace LeKoala\ExcelImportExport\Test;
 
+use LeKoala\ExcelImportExport\ExcelGridFieldExportButton;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Member;
 use SilverStripe\Dev\SapphireTest;
@@ -81,5 +82,14 @@ class ExcelImportExportTest extends SapphireTest
 
         $this->assertEquals($count + 2, $newCount);
         $this->assertEquals($membersCount + 2, $newMembersCount, "Groups are not updated");
+    }
+
+    public function testSanitize(): void
+    {
+        $dangerousInput = '=1+2";=1+2';
+
+        $actual = ExcelGridFieldExportButton::sanitizeValue($dangerousInput);
+        $expected = "\t" . $dangerousInput;
+        $this->assertEquals($expected, $actual);
     }
 }

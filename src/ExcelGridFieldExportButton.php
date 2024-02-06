@@ -289,13 +289,10 @@ class ExcelGridFieldExportButton implements
             return;
         }
 
-        $sanitize_xls_chars = ExcelImportExport::config()->sanitize_xls_chars ?? "=";
-        $sanitize_xls_chars_len = strlen($sanitize_xls_chars);
-
         // Auto format using DBField methods based on column name
         $export_format = ExcelImportExport::config()->export_format;
 
-        $sanitize = $this->sanitizeXls && $sanitize_xls_chars && $this->exportType == "csv";
+        $sanitize = $this->isSanitizeEnabled();
 
         foreach ($list as $item) {
             // This can be really slow for large exports depending on how canView is implemented
@@ -356,17 +353,8 @@ class ExcelGridFieldExportButton implements
 
                 // @link https://owasp.org/www-community/attacks/CSV_Injection
                 // [SS-2017-007] Sanitise XLS executable column values with a leading tab
-                if ($sanitize) {
-                    // If we have only one char we can make it simpler
-                    if ($sanitize_xls_chars_len === 1) {
-                        if ($value && $value[0] === $sanitize_xls_chars) {
-                            $value = "\t" . $value;
-                        }
-                    } else {
-                        if (preg_match('/^[' . $sanitize_xls_chars . '].*/', $value ?? '')) {
-                            $value = "\t" . $value;
-                        }
-                    }
+                if ($sanitize && $value && is_string($value)) {
+                    $value = self::sanitizeValue($value);
                 }
 
                 $dataRow[] = $value;
@@ -378,6 +366,46 @@ class ExcelGridFieldExportButton implements
 
             yield $dataRow;
         }
+    }
+
+    /**
+     * Sanitization is necessary for csv
+     * It can be turned off if needed
+     * If we have no chars to sanitize, it's not enabled
+     *
+     * @return boolean
+     */
+    public function isSanitizeEnabled(): bool
+    {
+        $sanitize_xls_chars = ExcelImportExport::config()->sanitize_xls_chars ?? "=";
+        $sanitize = $this->sanitizeXls && $sanitize_xls_chars && $this->exportType == "csv";
+        return $sanitize;
+    }
+
+    /**
+     * @link https://owasp.org/www-community/attacks/CSV_Injection
+     * [SS-2017-007] Sanitise XLS executable column values with a leading tab
+     */
+    public static function sanitizeValue(string $value = null): ?string
+    {
+        if (!$value) {
+            return $value;
+        }
+
+        $sanitize_xls_chars = ExcelImportExport::config()->sanitize_xls_chars ?? "=";
+        $sanitize_xls_chars_len = strlen($sanitize_xls_chars);
+
+        // If we have only one char we can make it simpler
+        if ($sanitize_xls_chars_len === 1) {
+            if ($value[0] === $sanitize_xls_chars) {
+                $value = "\t" . $value;
+            }
+        } else {
+            if (preg_match('/^[' . $sanitize_xls_chars . '].*/', $value)) {
+                $value = "\t" . $value;
+            }
+        }
+        return $value;
     }
 
     /**
