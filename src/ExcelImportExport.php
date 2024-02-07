@@ -178,7 +178,7 @@ class ExcelImportExport
         }
 
         $options = new Options();
-        $options->creator = "SilverStripe";
+        $options->creator = ExcelImportExport::config()->default_creator;
         SpreadCompat::output($data, $fileName, $options);
         exit();
     }

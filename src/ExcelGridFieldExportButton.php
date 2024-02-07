@@ -183,11 +183,10 @@ class ExcelGridFieldExportButton implements
 
         if ($ext != 'csv') {
             $end = ExcelImportExport::getLetter(count($this->getRealExportColumns($gridField)));
-            $opts['creator'] = "SilverStripe";
+            $opts['creator'] = ExcelImportExport::config()->default_creator;
             $opts['autofilter'] = "A1:{$end}1";
         }
 
-        SpreadCompat::$preferredCsvAdapter = SpreadCompat::NATIVE;
         SpreadCompat::output($data, $fileName, ...$opts);
         exit();
     }

@@ -15,6 +15,18 @@ These changes apply automatically to SecurityAdmin and ModelAdmin through extens
 To make import easier, import specs are replaced by a sample file that is ready to use for the user.
 This import file can be further customised by implementing `sampleImportData` that should return an array of rows.
 
+## Choosing your adapter
+
+You can choose your preferred adapter in yml. Accepted values are:
+- csv: PhpSpreadsheet,OpenSpout,League,Native
+- xlsx: PhpSpreadsheet,OpenSpout,Simple,Native
+
+```yml
+LeKoala\ExcelImportExport\ExcelImportExport:
+  preferred_csv_adapter: 'Native'
+  preferred_xlsx_adapter: 'Native'
+```
+
 ## Configure exported fields
 
 All fields are exported by default (not just summary fields that are useless by themselves)
