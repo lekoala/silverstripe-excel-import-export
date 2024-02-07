@@ -38,6 +38,7 @@ class ExcelMemberBulkLoader extends ExcelBulkLoader
         }
         parent::__construct($objectClass);
     }
+
     /**
      * @param array<string,mixed> $record
      * @param array<string,string> $columnMap

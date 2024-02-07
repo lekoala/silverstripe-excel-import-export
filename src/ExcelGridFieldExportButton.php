@@ -83,7 +83,7 @@ class ExcelGridFieldExportButton implements
     public function getActionName($gridField)
     {
         $name = strtolower($gridField->getName());
-        return 'excelexport_' . $name;
+        return 'excelexport_' . $name . '_' . $this->exportType;
     }
 
     /**
