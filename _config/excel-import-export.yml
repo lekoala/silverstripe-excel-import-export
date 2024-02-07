@@ -5,7 +5,7 @@ After:
 ---
 LeKoala\ExcelImportExport\ExcelImportExport:
   preferred_csv_adapter: 'Native'
-  preferred_xlsx_adapter: 'PhpSpreadsheet'
+  preferred_xlsx_adapter: 'Native'
   default_creator: 'SilverStripe'
   default_extension: "xlsx" # could be csv
   allowed_extensions:
