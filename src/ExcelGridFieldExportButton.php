@@ -8,6 +8,7 @@ use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Core\Config\Config;
 use LeKoala\SpreadCompat\SpreadCompat;
 use SilverStripe\Assets\FileNameFilter;
 use SilverStripe\Forms\GridField\GridField;
@@ -234,7 +235,7 @@ class ExcelGridFieldExportButton implements
         }
 
         $list = $items;
-        $limit = ExcelImportExport::$limit_exports;
+        $limit = Config::inst()->get(ExcelImportExport::class, 'limit_exports');
         if ($list instanceof DataList) {
             if ($this->isLimited && $limit > 0) {
                 $list = $list->limit($limit);
