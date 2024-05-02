@@ -55,6 +55,19 @@ class ExcelImportExport
     public static $limit_exports = 1000;
 
     /**
+     * You can override the static var with yml config if needed
+     * @return int
+     */
+    public static function getExportLimit()
+    {
+        $v = self::config()->export_limit;
+        if ($v) {
+            return $v;
+        }
+        return self::$limit_exports;
+    }
+
+    /**
      * Get all db fields for a given dataobject class
      *
      * @param string $class
