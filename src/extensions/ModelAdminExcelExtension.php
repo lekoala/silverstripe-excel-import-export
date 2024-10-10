@@ -196,6 +196,10 @@ class ModelAdminExcelExtension extends Extension
                     $htmlDesc .= '<div class="js-import-desc" data-name="' . $class . '" hidden>' . $class::getSampleFileLink() . '</div>';
                 }
             }
+
+            if (!$useDefaultSample) {
+                $htmlDesc = '<div class="js-import-desc" data-name="default" hidden>' . ExcelImportExport::createDownloadSampleLink() . '</div>' . $htmlDesc;
+            }
         }
 
         /** @var \SilverStripe\Forms\FileField|null $file */
