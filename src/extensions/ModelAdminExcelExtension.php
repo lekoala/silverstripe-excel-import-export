@@ -80,7 +80,12 @@ class ModelAdminExcelExtension extends Extension
     {
         /** @var \SilverStripe\Admin\ModelAdmin $owner */
         $owner = $this->owner;
-        ExcelImportExport::sampleFileForClass($owner->getModelClass());
+        $importer = $owner->getRequest()->getVar('importer');
+        if ($importer && class_exists($importer) && method_exists($importer, 'getSampleFile')) {
+            $importer::getSampleFile();
+        } else {
+            ExcelImportExport::sampleFileForClass($owner->getModelClass());
+        }
     }
 
     /**
@@ -166,17 +171,41 @@ class ModelAdminExcelExtension extends Extension
 
         $fields = $form->Fields();
 
-        $downloadSampleLink = $owner->Link(str_replace('\\', '-', $class) . '/downloadsample');
-        $downloadSample = '<a href="' . $downloadSampleLink . '" class="no-ajax" target="_blank">' . _t(
-            'ExcelImportExport.DownloadSample',
-            'Download sample file'
-        ) . '</a>';
+        // We can implement a custom handler
+        $importHandlers = [];
+        $htmlDesc = '';
+        $useDefaultSample = true;
+        if ($modelSNG->hasMethod('listImportHandlers')) {
+            $importHandlers = array_merge([
+                'default' => _t('ExcelImportExport.DefaultHandler', 'Default import handler'),
+            ], $modelSNG->listImportHandlers());
+
+            $supportOnlyUpdate = [];
+            foreach ($importHandlers as $class => $label) {
+                if (!class_exists($class)) {
+                    continue;
+                }
+                if (method_exists($class, 'setOnlyUpdate')) {
+                    $supportOnlyUpdate[] = $class;
+                }
+                if (method_exists($class, 'getImportDescription')) {
+                    $htmlDesc .= '<div class="js-import-desc" data-name="' . $class . '" hidden>' . $class::getImportDescription() . '</div>';
+                }
+                if (method_exists($class, 'getSampleFileLink')) {
+                    $useDefaultSample = false;
+                    $htmlDesc .= '<div class="js-import-desc" data-name="' . $class . '" hidden>' . $class::getSampleFileLink() . '</div>';
+                }
+            }
+        }
 
         /** @var \SilverStripe\Forms\FileField|null $file */
         $file = $fields->dataFieldByName('_CsvFile');
         if ($file) {
             $csvDescription = ExcelImportExport::getValidExtensionsText();
-            $csvDescription .= '. ' . $downloadSample;
+            if ($useDefaultSample) {
+                $downloadSample = ExcelImportExport::createDownloadSampleLink();
+                $csvDescription .= '. ' . $downloadSample;
+            }
             $file->setDescription($csvDescription);
             $file->getValidator()->setAllowedExtensions(ExcelImportExport::getValidExtensions());
         }
@@ -194,30 +223,19 @@ class ModelAdminExcelExtension extends Extension
         // We moved the specs into a nice to use download sample button
         $fields->removeByName("SpecFor{$modelName}");
 
-        // We can implement a custom handler
-        $importHandlers = [];
-        if ($modelSNG->hasMethod('listImportHandlers')) {
-            $importHandlers = array_merge([
-                'default' => _t('ExcelImportExport.DefaultHandler', 'Default import handler'),
-            ], $modelSNG->listImportHandlers());
-
-            $supportOnlyUpdate = [];
-            foreach ($importHandlers as $class => $label) {
-                if (class_exists($class) && method_exists($class, 'setOnlyUpdate')) {
-                    $supportOnlyUpdate[] = $class;
-                }
-            }
-
+        if (!empty($importHandlers)) {
             $form->Fields()->push($OnlyUpdateRecords = new CheckboxField("OnlyUpdateRecords", _t('ExcelImportExport.OnlyUpdateRecords', "Only update records")));
             $OnlyUpdateRecords->setAttribute("data-handlers", implode(",", $supportOnlyUpdate));
-        }
-        if (!empty($importHandlers)) {
+
             $form->Fields()->push($ImportHandler = new OptionsetField("ImportHandler", _t('ExcelImportExport.PleaseSelectImportHandler', "Please select the import handler"), $importHandlers));
             // Simply check of this is supported or not for the given handler (if not, disable it)
             $js = <<<JS
-var cb=document.querySelector('#OnlyUpdateRecords');var accepted=cb.dataset.handlers.split(',');var item=([...this.querySelectorAll('input')].filter((input) => input.checked)[0]); cb.disabled=(item && accepted.includes(item.value)) ? '': 'disabled';
+var desc=document.querySelectorAll('.js-import-desc');var cb=document.querySelector('#OnlyUpdateRecords');var accepted=cb.dataset.handlers.split(',');var item=([...this.querySelectorAll('input')].filter((input) => input.checked)[0]); cb.disabled=(item && accepted.includes(item.value)) ? '': 'disabled';desc.forEach((el)=>el.hidden=!item||el.dataset.name!=item.value);;
 JS;
             $ImportHandler->setAttribute("onclick", $js);
+            if ($htmlDesc) {
+                $ImportHandler->setDescription($htmlDesc); // Description is an HTMLFragment
+            }
         }
 
         $actions = $form->Actions();

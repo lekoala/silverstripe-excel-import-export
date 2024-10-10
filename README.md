@@ -64,6 +64,27 @@ This require some custom code on your `ModelAdmin` class that could look like th
 The import handlers only need to implement a `load` method that needs to return a result string
 or a `BulkLoader_Result` object.
 
+These custom handlers can have a custom description and a custom sample file:
+
+```php
+    public static function getImportDescription()
+    {
+        return "This is my custom description";
+    }
+
+    public static function getSampleFileLink()
+    {
+        return ExcelImportExport::createDownloadSampleLink(__CLASS__);
+    }
+
+    public static function getSampleFile()
+    {
+        $data = []; // TODO
+        ExcelImportExport::createSampleFile($data, __CLASS__);
+    }
+
+```
+
 ## Compatibility
 
 Tested with ^5 and up

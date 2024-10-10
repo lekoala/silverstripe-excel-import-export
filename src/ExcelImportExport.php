@@ -151,6 +151,32 @@ class ExcelImportExport
         return array_combine($importedFields, $importedFields);
     }
 
+    public static function createDownloadSampleLink($importer = '')
+    {
+        /** @var \SilverStripe\Admin\ModelAdmin $owner */
+        $owner = Controller::curr();
+        $class = $owner->getModelClass();
+        $downloadSampleLink = $owner->Link(str_replace('\\', '-', $class) . '/downloadsample?importer=' . urlencode($importer));
+        $downloadSample = '<a href="' . $downloadSampleLink . '" class="no-ajax" target="_blank">' . _t(
+            'ExcelImportExport.DownloadSample',
+            'Download sample file'
+        ) . '</a>';
+        return $downloadSample;
+    }
+
+    public static function createSampleFile($data, $fileName)
+    {
+        $ext = self::getDefaultExtension();
+        $fileNameExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+        if (!$fileNameExtension) {
+            $fileName .= ".$ext";
+        }
+        $options = new Options();
+        $options->creator = ExcelImportExport::config()->default_creator;
+        SpreadCompat::output($data, $fileName, $options);
+        exit();
+    }
+
     /**
      * Output a sample file for a class
      *
@@ -190,10 +216,7 @@ class ExcelImportExport
             throw new Exception("`sampleImportData` must return an iterable");
         }
 
-        $options = new Options();
-        $options->creator = ExcelImportExport::config()->default_creator;
-        SpreadCompat::output($data, $fileName, $options);
-        exit();
+        self::createSampleFile($data, $fileName);
     }
 
     /**
