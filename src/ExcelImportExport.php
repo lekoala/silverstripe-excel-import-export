@@ -143,7 +143,7 @@ class ExcelImportExport
             $importedFields = array_keys(self::allFieldsForClass($class));
         }
 
-        $unimportedFields = Config::inst()->get($class, 'unimported_Fields');
+        $unimportedFields = Config::inst()->get($class, 'unimported_fields');
 
         if ($unimportedFields) {
             $importedFields = array_diff($importedFields, $unimportedFields);
