@@ -21,6 +21,7 @@ use SilverStripe\Core\Config\Configurable;
 use PhpOffice\PhpSpreadsheet\Reader\IReader;
 use PhpOffice\PhpSpreadsheet\Writer\IWriter;
 use SilverStripe\Assets\FileNameFilter;
+use SilverStripe\Core\Injector\Injector;
 
 /**
  * Support class for the module
@@ -240,20 +241,36 @@ class ExcelImportExport
     }
 
     /**
-     * @param string $handler
+     * This can be used in your ModelAdmin class
+     *
+     * public function import(array $data, Form $form): HTTPResponse
+     * {
+     *  if (!ExcelImportExport::checkImportForm($this)) {
+     *      throw new Exception("Invalid import form");
+     *  }
+     *  $handler = $data['ImportHandler'] ?? null;
+     *  if ($handler == "default") {
+     *      return parent::import($data, $form);
+     *  }
+     *  return ExcelImportExport::useCustomHandler($handler, $form, $this);
+     * }
+     *
+     * @param class-string $handler
      * @param Form $form
      * @param Controller $controller
      * @return HTTPResponse
      */
     public static function useCustomHandler($handler, Form $form, Controller $controller)
     {
+        // Check if the class has a ::load method
         if (!$handler || !method_exists($handler, "load")) {
             $form->sessionMessage("Invalid handler: $handler", 'bad');
             return $controller->redirectBack();
         }
         $file = $_FILES['_CsvFile']['tmp_name'];
         $name = $_FILES['_CsvFile']['name'];
-        $inst = new $handler();
+
+        $inst = new $handler($form, $controller);
 
         if (!empty($_POST['OnlyUpdateRecords']) && method_exists($inst, 'setOnlyUpdate')) {
             $inst->setOnlyUpdate(true);
