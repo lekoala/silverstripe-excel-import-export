@@ -21,7 +21,6 @@ use SilverStripe\Core\Config\Configurable;
 use PhpOffice\PhpSpreadsheet\Reader\IReader;
 use PhpOffice\PhpSpreadsheet\Writer\IWriter;
 use SilverStripe\Assets\FileNameFilter;
-use SilverStripe\Core\Injector\Injector;
 
 /**
  * Support class for the module
@@ -270,7 +269,9 @@ class ExcelImportExport
         $file = $_FILES['_CsvFile']['tmp_name'];
         $name = $_FILES['_CsvFile']['name'];
 
-        $inst = new $handler($form, $controller);
+        // Handler could be any class with a ::load method or an instance of BulkLoader
+        $modelClass = method_exists($handler, 'getModelClass') ? $controller->getModelClass() : null;
+        $inst = new $handler($modelClass);
 
         if (!empty($_POST['OnlyUpdateRecords']) && method_exists($inst, 'setOnlyUpdate')) {
             $inst->setOnlyUpdate(true);
