@@ -8,6 +8,7 @@ use SilverStripe\Security\Member;
 use SilverStripe\Dev\SapphireTest;
 use LeKoala\ExcelImportExport\ExcelImportExport;
 use LeKoala\ExcelImportExport\ExcelMemberBulkLoader;
+use LeKoala\ExcelImportExport\Test\Mocks\TestExcelMember;
 
 /**
  * Tests for ExcelImportExport
@@ -19,6 +20,9 @@ class ExcelImportExportTest extends SapphireTest
      * @var string
      */
     protected static $fixture_file = 'ExcelImportExportTest.yml';
+    protected static $extra_dataobjects = [
+        TestExcelMember::class,
+    ];
 
     public function testGetAllFields(): void
     {
@@ -36,7 +40,6 @@ class ExcelImportExportTest extends SapphireTest
     public function testCanImportMembers(): void
     {
         $count = Member::get()->count();
-        /** @var Group $firstGroup */
         $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
         $membersCount = $firstGroup->Members()->count();
 
@@ -47,7 +50,6 @@ class ExcelImportExportTest extends SapphireTest
         $this->assertEquals(1, $result->CreatedCount());
 
         $newCount = Member::get()->count();
-        /** @var Group $firstGroup */
         $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
         $newMembersCount = $firstGroup->Members()->count();
 
@@ -62,7 +64,6 @@ class ExcelImportExportTest extends SapphireTest
         $this->assertEquals(0, $result->UpdatedCount());
 
         $newCount = Member::get()->count();
-        /** @var Group $firstGroup */
         $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
         $newMembersCount = $firstGroup->Members()->count();
 
@@ -76,7 +77,6 @@ class ExcelImportExportTest extends SapphireTest
         $this->assertEquals(1, $result->UpdatedCount());
 
         $newCount = Member::get()->count();
-        /** @var Group $firstGroup */
         $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
         $newMembersCount = $firstGroup->Members()->count();
 
@@ -91,5 +91,37 @@ class ExcelImportExportTest extends SapphireTest
         $actual = ExcelGridFieldExportButton::sanitizeValue($dangerousInput);
         $expected = "\t" . $dangerousInput;
         $this->assertEquals($expected, $actual);
+    }
+
+    public function testImportMultipleClasses(): void
+    {
+        $beforeCount = Member::get()->count();
+
+        $loader = new ExcelMemberBulkLoader();
+        $result = $loader->load(__DIR__ . '/data/members-class.csv');
+
+        $totalCount = Member::get()->count();
+        $this->assertEquals(2, $result->CreatedCount());
+        $this->assertEquals($beforeCount, $totalCount - 2);
+
+        // Is a subclass AND a base class
+        $member = TestExcelMember::get()->filter('Email', 'excel@silverstripe.org')->first();
+        $this->assertNotEmpty($member);
+        $member = Member::get()->filter('Email', 'excel@silverstripe.org')->first();
+        $this->assertNotEmpty($member);
+
+        // Not a subclass
+        $member = TestExcelMember::get()->filter('Email', 'regular@silverstripe.org')->first();
+        $this->assertEmpty($member);
+
+        // Checking duplicate still works even with custom class
+        $loader = new ExcelMemberBulkLoader();
+        $result = $loader->load(__DIR__ . '/data/members-class.csv');
+
+        $this->assertEquals(0, $result->CreatedCount());
+        $this->assertEquals(2, $result->UpdatedCount());
+
+        $newTotalCount = Member::get()->count();
+        $this->assertEquals($newTotalCount, $totalCount);
     }
 }

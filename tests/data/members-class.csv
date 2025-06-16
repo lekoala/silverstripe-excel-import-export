@@ -1,0 +1,3 @@
+ClassName;FirstName;Surname;Email;Groups
+SilverStripe\Security\Member;test;import;regular@silverstripe.org;ADMINISTRATORS
+LeKoala\ExcelImportExport\Test\Mocks\TestExcelMember;test;excel;excel@silverstripe.org;ADMINISTRATORS

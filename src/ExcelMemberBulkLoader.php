@@ -59,8 +59,7 @@ class ExcelMemberBulkLoader extends ExcelBulkLoader
         $_cache_groupByCode = [];
 
         // Add to predefined groups
-        /** @var Member $member */
-        $member = DataObject::get_by_id($this->objectClass, $objID);
+        $member = Member::get_by_id($objID);
         foreach ($this->groups as $group) {
             // TODO This isnt the most memory effective way to add members to a group
             $member->Groups()->add($group);

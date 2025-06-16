@@ -8,12 +8,17 @@ use SilverStripe\Dev\BulkLoader;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Environment;
 use SilverStripe\Dev\BulkLoader_Result;
+use SilverStripe\Control\HTTPResponse_Exception;
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\ORM\DB;
 
 /**
  * @author Koala
  */
 class ExcelBulkLoader extends BulkLoader
 {
+    private bool $useTransaction = false;
+
     /**
      * Delimiter character
      * We use auto detection for csv because we can't ask the user what he is using
@@ -35,6 +40,13 @@ class ExcelBulkLoader extends BulkLoader
      * @var boolean
      */
     public $hasHeaderRow = true;
+
+    /**
+     * @var array<string,string>
+     */
+    public $duplicateChecks = [
+        'ID' => 'ID',
+    ];
 
     /**
      * The uploaded file infos
@@ -95,13 +107,44 @@ class ExcelBulkLoader extends BulkLoader
         Environment::increaseTimeLimitTo(3600);
         Environment::increaseMemoryLimitTo('512M');
 
-        // get all instances of the to be imported data object
-        if ($this->deleteExistingRecords) {
-            // warning !!! this removes the records ONE BY ONE it can be REALLY SLOW
-            DataObject::get($this->objectClass)->removeAll();
+        if ($this->useTransaction) {
+            DB::get_conn()->transactionStart();
         }
 
-        return $this->processAll($filepath);
+        try {
+            //get all instances of the to be imported data object
+            if ($this->deleteExistingRecords) {
+                if ($this->getCheckPermissions()) {
+                    // We need to check each record, in case there's some fancy conditional logic in the canDelete method.
+                    // If we can't delete even a single record, we should bail because otherwise the result would not be
+                    // what the user expects.
+                    /** @var DataObject $record */
+                    foreach (DataObject::get($this->objectClass) as $record) {
+                        if (!$record->canDelete()) {
+                            $type = $record->i18n_singular_name();
+                            throw new HTTPResponse_Exception(
+                                _t(__CLASS__ . '.CANNOT_DELETE', "Not allowed to delete '{type}' records", ["type" => $type]),
+                                403
+                            );
+                        }
+                    }
+                }
+                DataObject::get($this->objectClass)->removeAll();
+            }
+
+            $result = $this->processAll($filepath);
+
+            if ($this->useTransaction) {
+                DB::get_conn()->transactionEnd();
+            }
+        } catch (Exception $e) {
+            if ($this->useTransaction) {
+                DB::get_conn()->transactionRollback();
+            }
+            $code = $e->getCode() ?: 500;
+            throw new HTTPResponse_Exception($e->getMessage(), $code);
+        }
+        return $result;
     }
 
     /**
@@ -139,6 +182,8 @@ class ExcelBulkLoader extends BulkLoader
      */
     protected function processAll($filepath, $preview = false)
     {
+        $this->extend('onBeforeProcessAll', $filepath, $preview);
+
         $results = new BulkLoader_Result();
         $ext = $this->getUploadFileExtension();
 
@@ -171,6 +216,8 @@ class ExcelBulkLoader extends BulkLoader
             );
         }
 
+        $this->extend('onAfterProcessAll', $result, $preview);
+
         return $results;
     }
 
@@ -190,13 +237,30 @@ class ExcelBulkLoader extends BulkLoader
         $preview = false,
         $makeRelations = false
     ) {
-        $class = $this->objectClass;
-
         // find existing object, or create new one
         $existingObj = $this->findExistingObject($record, $columnMap);
+        $alreadyExists = (bool) $existingObj;
 
-        /** @var DataObject $obj */
+        // If we can't edit the existing object, bail early.
+        if ($this->getCheckPermissions() && !$preview && $alreadyExists && !$existingObj->canEdit()) {
+            $type = $existingObj->i18n_singular_name();
+            throw new HTTPResponse_Exception(
+                _t(BulkLoader::class . '.CANNOT_EDIT', "Not allowed to edit '{type}' records", ["type" => $type]),
+                403
+            );
+        }
+
+        $class = $record['ClassName'] ?? $this->objectClass;
         $obj = $existingObj ? $existingObj : new $class();
+
+        // If we can't create a new record, bail out early.
+        if ($this->getCheckPermissions() && !$preview && !$alreadyExists && !$obj->canCreate()) {
+            $type = $obj->i18n_singular_name();
+            throw new HTTPResponse_Exception(
+                _t(BulkLoader::class . '.CANNOT_CREATE', "Not allowed to create '{type}' records", ["type" => $type]),
+                403
+            );
+        }
 
         // first run: find/create any relations and store them on the object
         // we can't combine runs, as other columns might rely on the relation being present
@@ -338,23 +402,26 @@ class ExcelBulkLoader extends BulkLoader
      * @param array $record CSV data column
      * @param array $columnMap
      *
-     * @return mixed
+     * @return DataObject|false
      */
-    public function findExistingObject($record, $columnMap)
+    public function findExistingObject($record, $columnMap = [])
     {
-        $objectClass = $this->objectClass;
         $SNG_objectClass = $this->singleton;
 
         // checking for existing records (only if not already found)
         foreach ($this->duplicateChecks as $fieldName => $duplicateCheck) {
+            $existingRecord = null;
             if (is_string($duplicateCheck)) {
                 // Skip current duplicate check if field value is empty
                 if (empty($record[$duplicateCheck])) {
                     continue;
                 }
 
-                $existingRecord = $objectClass::get()
-                    ->filter($fieldName, $record[$duplicateCheck])
+                $dbFieldValue = $record[$duplicateCheck];
+
+                // Even if $record['ClassName'] is a subclass, this will work
+                $existingRecord = DataObject::get($this->objectClass)
+                    ->filter($duplicateCheck, $dbFieldValue)
                     ->first();
 
                 if ($existingRecord) {
@@ -372,10 +439,9 @@ class ExcelBulkLoader extends BulkLoader
                         $record
                     );
                 } else {
-                    user_error(
-                        "CsvBulkLoader::processRecord():"
-                            . " {$duplicateCheck['callback']} not found on importer or object class.",
-                        E_USER_ERROR
+                    throw new \RuntimeException(
+                        "ExcelBulkLoader::processRecord():"
+                            . " {$duplicateCheck['callback']} not found on importer or object class."
                     );
                 }
 
@@ -383,9 +449,8 @@ class ExcelBulkLoader extends BulkLoader
                     return $existingRecord;
                 }
             } else {
-                user_error(
-                    'CsvBulkLoader::processRecord(): Wrong format for $duplicateChecks',
-                    E_USER_ERROR
+                throw new \InvalidArgumentException(
+                    'ExcelBulkLoader::processRecord(): Wrong format for $duplicateChecks'
                 );
             }
         }
@@ -423,5 +488,22 @@ class ExcelBulkLoader extends BulkLoader
     public function getFileType()
     {
         return $this->fileType;
+    }
+
+    /**
+     * If true, will wrap everything in a transaction
+     */
+    public function getUseTransaction(): bool
+    {
+        return $this->useTransaction;
+    }
+
+    /**
+     * Determines if everything will be wrapped in a transaction
+     */
+    public function setCheckPermissions(bool $value): ExcelBulkLoader
+    {
+        $this->useTransaction = $value;
+        return $this;
     }
 }
