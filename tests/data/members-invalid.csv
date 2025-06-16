@@ -1,3 +1,3 @@
-FirstName;Surname;Email
-test;valid;valid@silverstripe.org
-test;invalid;not-a-valid-email
+ClassName;FirstName;Surname;Email
+LeKoala\ExcelImportExport\Test\Mocks\TestExcelMember;test;valid;valid@silverstripe.org
+LeKoala\ExcelImportExport\Test\Mocks\TestExcelMember;test;invalid;not-a-valid-email
