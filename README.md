@@ -2,7 +2,7 @@
 
 ![Build Status](https://github.com/lekoala/silverstripe-excel-import-export/actions/workflows/ci.yml/badge.svg)
 [![scrutinizer](https://scrutinizer-ci.com/g/lekoala/silverstripe-excel-import-export/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-excel-import-export/)
-[![Code coverage](https://codecov.io/gh/lekoala/silverstripe-excel-import-export/branch/master/graph/badge.svg)](https://codecov.io/gh/lekoala/silverstripe-excel-import-export)
+[![codecov](https://codecov.io/gh/lekoala/silverstripe-excel-import-export/graph/badge.svg?token=9w4Hcfp4eC)](https://codecov.io/gh/lekoala/silverstripe-excel-import-export)
 
 ## Intro
 
