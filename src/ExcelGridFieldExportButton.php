@@ -385,7 +385,7 @@ class ExcelGridFieldExportButton implements
      * @link https://owasp.org/www-community/attacks/CSV_Injection
      * [SS-2017-007] Sanitise XLS executable column values with a leading tab
      */
-    public static function sanitizeValue(string $value = null): ?string
+    public static function sanitizeValue(?string $value = null): ?string
     {
         if (!$value) {
             return $value;

@@ -21,6 +21,7 @@ use SilverStripe\Admin\SecurityAdmin;
 /**
  * Extends {@link ModelAdmin}. to bind new forms and features
  *
+ * @property \SilverStripe\Admin\LeftAndMain $owner
  * @author Koala
  */
 class ModelAdminExcelExtension extends Extension
@@ -47,9 +48,7 @@ class ModelAdminExcelExtension extends Extension
      */
     protected function updateModelImporters()
     {
-        /** @var ModelAdmin $owner */
         $owner = $this->owner;
-        //@phpstan-ignore-next-line
         $config = $this->owner::config();
 
         // Overwrite model imports
@@ -78,7 +77,6 @@ class ModelAdminExcelExtension extends Extension
      */
     public function downloadsample()
     {
-        /** @var \SilverStripe\Admin\ModelAdmin $owner */
         $owner = $this->owner;
         $importer = $owner->getRequest()->getVar('importer');
         if ($importer && class_exists($importer) && method_exists($importer, 'getSampleFile')) {
@@ -94,7 +92,6 @@ class ModelAdminExcelExtension extends Extension
      */
     public function updateGridFieldConfig(GridFieldConfig $config)
     {
-        /** @var ModelAdmin $owner */
         $owner = $this->owner;
         $class = $owner->getModelClass();
         $classConfig = $owner->config();
@@ -160,7 +157,6 @@ class ModelAdminExcelExtension extends Extension
      */
     public function updateImportForm(Form $form)
     {
-        /** @var ModelAdmin $owner */
         $owner = $this->owner;
         $class = $owner->getModelClass();
         $classConfig = $owner->config();

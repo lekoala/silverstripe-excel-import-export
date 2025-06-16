@@ -53,13 +53,12 @@ class ExcelGroupBulkLoader extends ExcelBulkLoader
 
         $objID = parent::processRecord($record, $columnMap, $results, $preview);
 
-        /** @var Group $group */
-        $group = DataObject::get_by_id($this->objectClass, $objID);
+        $group = Group::get_by_id($objID);
         // set group hierarchies - we need to do this after all records
         // are imported to avoid missing "early" references to parents
         // which are imported later on in the CSV file.
         if (isset($record['ParentCode']) && $record['ParentCode']) {
-            $parentGroup = DataObject::get_one('SilverStripe\\Security\\Group', array(
+            $parentGroup = DataObject::get_one(Group::class, array(
                 '"Group"."Code"' => $record['ParentCode']
             ));
             if ($parentGroup) {
@@ -72,7 +71,7 @@ class ExcelGroupBulkLoader extends ExcelBulkLoader
         // existing permissions arent cleared.
         if (isset($record['PermissionCodes']) && $record['PermissionCodes']) {
             foreach (explode(',', $record['PermissionCodes']) as $code) {
-                $p = DataObject::get_one('SilverStripe\\Security\\Permission', array(
+                $p = DataObject::get_one(Permission::class, array(
                     '"Permission"."Code"' => $code,
                     '"Permission"."GroupID"' => $group->ID
                 ));
