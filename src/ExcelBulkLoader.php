@@ -17,6 +17,8 @@ use SilverStripe\ORM\DB;
  */
 class ExcelBulkLoader extends BulkLoader
 {
+    private bool $checkPermissions = false;
+
     private bool $useTransaction = false;
 
     /**
@@ -488,6 +490,23 @@ class ExcelBulkLoader extends BulkLoader
     public function getFileType()
     {
         return $this->fileType;
+    }
+
+    /**
+     * If true, this bulk loader will respect create/edit/delete permissions.
+     */
+    public function getCheckPermissions(): bool
+    {
+        return $this->checkPermissions;
+    }
+
+    /**
+     * Determine whether this bulk loader should respect create/edit/delete permissions.
+     */
+    public function setCheckPermissions(bool $value): ExcelBulkLoader
+    {
+        $this->checkPermissions = $value;
+        return $this;
     }
 
     /**
