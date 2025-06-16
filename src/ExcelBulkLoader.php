@@ -501,7 +501,7 @@ class ExcelBulkLoader extends BulkLoader
     /**
      * Determines if everything will be wrapped in a transaction
      */
-    public function setCheckPermissions(bool $value): ExcelBulkLoader
+    public function setUseTransaction(bool $value): ExcelBulkLoader
     {
         $this->useTransaction = $value;
         return $this;

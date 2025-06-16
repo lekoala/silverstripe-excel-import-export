@@ -2,6 +2,7 @@
 
 namespace LeKoala\ExcelImportExport\Test;
 
+use Exception;
 use LeKoala\ExcelImportExport\ExcelGridFieldExportButton;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Member;
@@ -123,5 +124,43 @@ class ExcelImportExportTest extends SapphireTest
 
         $newTotalCount = Member::get()->count();
         $this->assertEquals($newTotalCount, $totalCount);
+    }
+
+    public function testTransaction()
+    {
+        $beforeCount = Member::get()->count();
+
+        $loader = new ExcelMemberBulkLoader();
+        $loader->setUseTransaction(true);
+
+        try {
+            $result = $loader->load(__DIR__ . '/data/members-invalid.csv');
+        } catch (Exception $e) {
+            // expected to fail
+        }
+
+        // First row was not created because it was rolled back
+        $member = Member::get()->filter('Email', 'valid@silverstripe.org')->first();
+        $this->assertEmpty($member);
+
+        $newTotalCount = Member::get()->count();
+        $this->assertEquals($newTotalCount, $beforeCount);
+
+
+        $loader = new ExcelMemberBulkLoader();
+        $loader->setUseTransaction(false);
+
+        try {
+            $result = $loader->load(__DIR__ . '/data/members-invalid.csv');
+        } catch (Exception $e) {
+            // expected to fail
+        }
+
+        // First row was created because it was not rolled back
+        $member = Member::get()->filter('Email', 'valid@silverstripe.org')->first();
+        $this->assertNotEmpty($member);
+
+        $newTotalCount = Member::get()->count();
+        $this->assertEquals($newTotalCount - 1, $beforeCount);
     }
 }
