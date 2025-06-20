@@ -24,9 +24,9 @@ class ExcelMemberBulkLoader extends ExcelBulkLoader
     /**
      * @var array<string,string>
      */
-    public $duplicateChecks = array(
+    public $duplicateChecks = [
         'Email' => 'Email',
-    );
+    ];
 
     /**
      * @param class-string $objectClass

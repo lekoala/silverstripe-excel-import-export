@@ -126,6 +126,33 @@ class ExcelImportExportTest extends SapphireTest
         $this->assertEquals($newTotalCount, $totalCount);
     }
 
+    public function testImportMigrateClasses(): void
+    {
+        // For members, duplicate is done on emails
+        $duplicateEmail = 'migrateme@silverstripe.org';
+
+        $baseMember = new Member();
+        $baseMember->Email = $duplicateEmail;
+        $baseMember->write();
+
+        $loader = new ExcelMemberBulkLoader();
+        $result = $loader->processData([
+            [
+                'ID' => $baseMember->ID,
+                'ClassName' => TestExcelMember::class,
+                'Email' => $duplicateEmail,
+            ]
+        ]);
+
+        $this->assertEquals(0, $result->CreatedCount());
+        $this->assertEquals(1, $result->UpdatedCount());
+
+        // Check that our existing member has the new class
+        $member = TestExcelMember::get()->filter('Email', $duplicateEmail)->first();
+        $this->assertNotEmpty($member);
+        $this->assertEquals($baseMember->ID, $member->ID);
+    }
+
     public function testTransaction()
     {
         $beforeCount = Member::get()->count();

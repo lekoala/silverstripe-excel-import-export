@@ -109,43 +109,34 @@ class ExcelBulkLoader extends BulkLoader
         Environment::increaseTimeLimitTo(3600);
         Environment::increaseMemoryLimitTo('512M');
 
-        if ($this->useTransaction) {
-            DB::get_conn()->transactionStart();
-        }
-
-        try {
-            //get all instances of the to be imported data object
-            if ($this->deleteExistingRecords) {
-                if ($this->getCheckPermissions()) {
-                    // We need to check each record, in case there's some fancy conditional logic in the canDelete method.
-                    // If we can't delete even a single record, we should bail because otherwise the result would not be
-                    // what the user expects.
-                    /** @var DataObject $record */
-                    foreach (DataObject::get($this->objectClass) as $record) {
-                        if (!$record->canDelete()) {
-                            $type = $record->i18n_singular_name();
-                            throw new HTTPResponse_Exception(
-                                _t(__CLASS__ . '.CANNOT_DELETE', "Not allowed to delete '{type}' records", ["type" => $type]),
-                                403
-                            );
-                        }
+        //get all instances of the to be imported data object
+        if ($this->deleteExistingRecords) {
+            if ($this->getCheckPermissions()) {
+                // We need to check each record, in case there's some fancy conditional logic in the canDelete method.
+                // If we can't delete even a single record, we should bail because otherwise the result would not be
+                // what the user expects.
+                /** @var DataObject $record */
+                foreach (DataObject::get($this->objectClass) as $record) {
+                    if (!$record->canDelete()) {
+                        $type = $record->i18n_singular_name();
+                        throw new HTTPResponse_Exception(
+                            _t(__CLASS__ . '.CANNOT_DELETE', "Not allowed to delete '{type}' records", ["type" => $type]),
+                            403
+                        );
                     }
                 }
-                DataObject::get($this->objectClass)->removeAll();
             }
-
-            $result = $this->processAll($filepath);
-
+            if ($this->useTransaction) {
+                DB::get_conn()->transactionStart();
+            }
+            DataObject::get($this->objectClass)->removeAll();
             if ($this->useTransaction) {
                 DB::get_conn()->transactionEnd();
             }
-        } catch (Exception $e) {
-            if ($this->useTransaction) {
-                DB::get_conn()->transactionRollback();
-            }
-            $code = $e->getCode() ?: 500;
-            throw new HTTPResponse_Exception($e->getMessage(), $code);
         }
+
+        $result = $this->processAll($filepath);
+
         return $result;
     }
 
@@ -186,13 +177,11 @@ class ExcelBulkLoader extends BulkLoader
     {
         $this->extend('onBeforeProcessAll', $filepath, $preview);
 
-        $results = new BulkLoader_Result();
-        $ext = $this->getUploadFileExtension();
-
         if (!is_readable($filepath)) {
             throw new Exception("Cannot read $filepath");
         }
 
+        $ext = $this->getUploadFileExtension();
         $opts = [
             'separator' => $this->delimiter,
             'enclosure' => $this->enclosure,
@@ -204,21 +193,49 @@ class ExcelBulkLoader extends BulkLoader
 
         $data = SpreadCompat::read($filepath, ...$opts);
 
+        $results = $this->processData($data, $preview);
+
+        $this->extend('onAfterProcessAll', $result, $preview);
+
+        return $results;
+    }
+
+    /**
+     * @param iterable $data
+     * @param bool $preview
+     * @return BulkLoader_Result
+     */
+    public function processData($data, $preview = false)
+    {
+        $results = new BulkLoader_Result();
+
         $objectClass = $this->objectClass;
         $objectConfig = $objectClass::config();
         $this->db = $objectConfig->db;
         $this->singleton = singleton($objectClass);
 
-        foreach ($data as $row) {
-            $this->processRecord(
-                $row,
-                $this->columnMap,
-                $results,
-                $preview
-            );
+        try {
+            if ($this->useTransaction) {
+                DB::get_conn()->transactionStart();
+            }
+            foreach ($data as $row) {
+                $this->processRecord(
+                    $row,
+                    $this->columnMap,
+                    $results,
+                    $preview
+                );
+            }
+            if ($this->useTransaction) {
+                DB::get_conn()->transactionEnd();
+            }
+        } catch (Exception $e) {
+            if ($this->useTransaction) {
+                DB::get_conn()->transactionRollback();
+            }
+            $code = $e->getCode() ?: 500;
+            throw new HTTPResponse_Exception($e->getMessage(), $code);
         }
-
-        $this->extend('onAfterProcessAll', $result, $preview);
 
         return $results;
     }

@@ -16,9 +16,9 @@ class ExcelGroupBulkLoader extends ExcelBulkLoader
     /**
      * @var array<string,string>
      */
-    public $duplicateChecks = array(
+    public $duplicateChecks = [
         'Code' => 'Code',
-    );
+    ];
 
     /**
      * @param class-string $objectClass
