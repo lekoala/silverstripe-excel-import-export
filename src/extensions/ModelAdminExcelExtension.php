@@ -29,9 +29,9 @@ class ModelAdminExcelExtension extends Extension
     /**
      * @var array<string>
      */
-    private static $allowed_actions = array(
+    private static $allowed_actions = [
         'downloadsample'
-    );
+    ];
 
     /**
      * @return void

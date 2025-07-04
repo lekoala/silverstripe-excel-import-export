@@ -4,10 +4,10 @@ namespace LeKoala\ExcelImportExport;
 
 use SilverStripe\Forms\Form;
 use SilverStripe\View\SSViewer;
-use SilverStripe\View\ArrayData;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridField_FormAction;
 use SilverStripe\Forms\GridField\GridFieldImportButton;
+use SilverStripe\Model\ArrayData;
 
 /**
  * Adds an "Import" action
@@ -60,8 +60,8 @@ class ExcelGridFieldImportButton extends GridFieldImportButton
             $button->setAttribute('data-state', 'open');
         }
 
-        return array(
+        return [
             $this->targetFragment => $button->Field()
-        );
+        ];
     }
 }
