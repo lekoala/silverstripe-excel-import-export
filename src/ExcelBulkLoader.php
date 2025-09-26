@@ -432,11 +432,11 @@ class ExcelBulkLoader extends BulkLoader
             $existingRecord = null;
             if (is_string($duplicateCheck)) {
                 // Skip current duplicate check if field value is empty
-                if (empty($record[$duplicateCheck])) {
+                if (empty($record[$fieldName])) {
                     continue;
                 }
 
-                $dbFieldValue = $record[$duplicateCheck];
+                $dbFieldValue = $record[$fieldName];
 
                 // Even if $record['ClassName'] is a subclass, this will work
                 $existingRecord = DataObject::get($this->objectClass)
