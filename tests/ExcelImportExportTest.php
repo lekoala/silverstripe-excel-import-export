@@ -28,14 +28,14 @@ class ExcelImportExportTest extends SapphireTest
     public function testGetAllFields(): void
     {
         $fields = ExcelImportExport::allFieldsForClass(Member::class);
-        $this->assertNotEmpty($fields);
+        self::assertNotEmpty($fields);
     }
 
     public function testExportedFields(): void
     {
         $fields = ExcelImportExport::exportFieldsForClass(Member::class);
-        $this->assertNotEmpty($fields);
-        $this->assertNotContains('Password', $fields);
+        self::assertNotEmpty($fields);
+        self::assertNotContains('Password', $fields);
     }
 
     public function testCanImportMembers(): void
@@ -48,41 +48,41 @@ class ExcelImportExportTest extends SapphireTest
         $loader = new ExcelMemberBulkLoader();
         $result = $loader->load(__DIR__ . '/data/members.csv');
 
-        $this->assertEquals(1, $result->CreatedCount());
+        self::assertEquals(1, $result->CreatedCount());
 
         $newCount = Member::get()->count();
         $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
         $newMembersCount = $firstGroup->Members()->count();
 
-        $this->assertEquals($count + 1, $newCount);
-        $this->assertEquals($membersCount + 1, $newMembersCount, "Groups are not updated");
+        self::assertEquals($count + 1, $newCount);
+        self::assertEquals($membersCount + 1, $newMembersCount, "Groups are not updated");
 
         // format is handled according to file extension
         $loader = new ExcelMemberBulkLoader();
         $result = $loader->load(__DIR__ . '/data/members.xlsx');
 
-        $this->assertEquals(1, $result->CreatedCount());
-        $this->assertEquals(0, $result->UpdatedCount());
+        self::assertEquals(1, $result->CreatedCount());
+        self::assertEquals(0, $result->UpdatedCount());
 
         $newCount = Member::get()->count();
         $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
         $newMembersCount = $firstGroup->Members()->count();
 
-        $this->assertEquals($count + 2, $newCount);
-        $this->assertEquals($membersCount + 2, $newMembersCount, "Groups are not updated");
+        self::assertEquals($count + 2, $newCount);
+        self::assertEquals($membersCount + 2, $newMembersCount, "Groups are not updated");
 
         // Loading again does nothing new
         $result = $loader->load(__DIR__ . '/data/members.xlsx');
 
-        $this->assertEquals(0, $result->CreatedCount());
-        $this->assertEquals(1, $result->UpdatedCount());
+        self::assertEquals(0, $result->CreatedCount());
+        self::assertEquals(1, $result->UpdatedCount());
 
         $newCount = Member::get()->count();
         $firstGroup = Group::get()->filter('Code', 'Administrators')->first();
         $newMembersCount = $firstGroup->Members()->count();
 
-        $this->assertEquals($count + 2, $newCount);
-        $this->assertEquals($membersCount + 2, $newMembersCount, "Groups are not updated");
+        self::assertEquals($count + 2, $newCount);
+        self::assertEquals($membersCount + 2, $newMembersCount, "Groups are not updated");
     }
 
     public function testSanitize(): void
@@ -91,7 +91,7 @@ class ExcelImportExportTest extends SapphireTest
 
         $actual = ExcelGridFieldExportButton::sanitizeValue($dangerousInput);
         $expected = "\t" . $dangerousInput;
-        $this->assertEquals($expected, $actual);
+        self::assertEquals($expected, $actual);
     }
 
     public function testImportMultipleClasses(): void
@@ -102,28 +102,28 @@ class ExcelImportExportTest extends SapphireTest
         $result = $loader->load(__DIR__ . '/data/members-class.csv');
 
         $totalCount = Member::get()->count();
-        $this->assertEquals(2, $result->CreatedCount());
-        $this->assertEquals($beforeCount, $totalCount - 2);
+        self::assertEquals(2, $result->CreatedCount());
+        self::assertEquals($beforeCount, $totalCount - 2);
 
         // Is a subclass AND a base class
         $member = TestExcelMember::get()->filter('Email', 'excel@silverstripe.org')->first();
-        $this->assertNotEmpty($member);
+        self::assertNotEmpty($member);
         $member = Member::get()->filter('Email', 'excel@silverstripe.org')->first();
-        $this->assertNotEmpty($member);
+        self::assertNotEmpty($member);
 
         // Not a subclass
         $member = TestExcelMember::get()->filter('Email', 'regular@silverstripe.org')->first();
-        $this->assertEmpty($member);
+        self::assertEmpty($member);
 
         // Checking duplicate still works even with custom class
         $loader = new ExcelMemberBulkLoader();
         $result = $loader->load(__DIR__ . '/data/members-class.csv');
 
-        $this->assertEquals(0, $result->CreatedCount());
-        $this->assertEquals(2, $result->UpdatedCount());
+        self::assertEquals(0, $result->CreatedCount());
+        self::assertEquals(2, $result->UpdatedCount());
 
         $newTotalCount = Member::get()->count();
-        $this->assertEquals($newTotalCount, $totalCount);
+        self::assertEquals($newTotalCount, $totalCount);
     }
 
     public function testImportMigrateClasses(): void
@@ -144,13 +144,13 @@ class ExcelImportExportTest extends SapphireTest
             ]
         ]);
 
-        $this->assertEquals(0, $result->CreatedCount());
-        $this->assertEquals(1, $result->UpdatedCount());
+        self::assertEquals(0, $result->CreatedCount());
+        self::assertEquals(1, $result->UpdatedCount());
 
         // Check that our existing member has the new class
         $member = TestExcelMember::get()->filter('Email', $duplicateEmail)->first();
-        $this->assertNotEmpty($member);
-        $this->assertEquals($baseMember->ID, $member->ID);
+        self::assertNotEmpty($member);
+        self::assertEquals($baseMember->ID, $member->ID);
     }
 
     public function testTransaction()
@@ -168,10 +168,10 @@ class ExcelImportExportTest extends SapphireTest
 
         // First row was not created because it was rolled back
         $member = Member::get()->filter('Email', 'valid@silverstripe.org')->first();
-        $this->assertEmpty($member);
+        self::assertEmpty($member);
 
         $newTotalCount = Member::get()->count();
-        $this->assertEquals($newTotalCount, $beforeCount);
+        self::assertEquals($newTotalCount, $beforeCount);
 
 
         $loader = new ExcelMemberBulkLoader();
@@ -185,9 +185,40 @@ class ExcelImportExportTest extends SapphireTest
 
         // First row was created because it was not rolled back
         $member = Member::get()->filter('Email', 'valid@silverstripe.org')->first();
-        $this->assertNotEmpty($member);
+        self::assertNotEmpty($member);
 
         $newTotalCount = Member::get()->count();
-        $this->assertEquals($newTotalCount - 1, $beforeCount);
+        self::assertEquals($newTotalCount - 1, $beforeCount);
+    }
+
+    public function testDuplicateChecks()
+    {
+        $loader = new ExcelMemberBulkLoader();
+        $loader->columnMap = [
+            'e_mail' => 'Email',
+            'fn' => 'FirstName',
+            'sn' => 'Surname',
+        ];
+        $loader->duplicateChecks = [
+            'e_mail' => 'Email'
+        ];
+        $result = $loader->load(__DIR__ . '/data/members-mapped.csv');
+
+        self::assertCount(1, $result->Created());
+
+        // Load again, should not create any new record
+        $loader = new ExcelMemberBulkLoader();
+        $loader->columnMap = [
+            'e_mail' => 'Email',
+            'fn' => 'FirstName',
+            'sn' => 'Surname',
+        ];
+        // Make sure duplicate checks match the mapping
+        $loader->duplicateChecks = [
+            'e_mail' => 'Email'
+        ];
+        $result = $loader->load(__DIR__ . '/data/members-mapped.csv');
+
+        self::assertCount(0, $result->Created());
     }
 }
