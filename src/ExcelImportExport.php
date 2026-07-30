@@ -472,7 +472,7 @@ class ExcelImportExport
         if (!self::isPhpSpreadsheetAvailable()) {
             throw new Exception("PHPSpreadsheet is not installed");
         }
-        $merged = new Spreadsheet;
+        $merged = new Spreadsheet();
         $merged->removeSheetByIndex(0);
         foreach ($files as $filename) {
             $remoteExcel = IOFactory::load($filename);

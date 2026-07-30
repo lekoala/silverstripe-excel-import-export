@@ -121,7 +121,8 @@ class ModelAdminExcelExtension extends Extension
 
         // Rename import button
         $config->removeComponentsByType(GridFieldImportButton::class);
-        if ((is_bool($owner->showImportForm)
+        if (
+            (is_bool($owner->showImportForm)
                 && $owner->showImportForm)
             ||
             (is_array($owner->showImportForm)

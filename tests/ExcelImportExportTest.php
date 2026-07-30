@@ -4,9 +4,12 @@ namespace LeKoala\ExcelImportExport\Test;
 
 use Exception;
 use LeKoala\ExcelImportExport\ExcelGridFieldExportButton;
+use SilverStripe\Core\Config\Config;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Member;
 use SilverStripe\Dev\SapphireTest;
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldConfig_Base;
 use LeKoala\ExcelImportExport\ExcelImportExport;
 use LeKoala\ExcelImportExport\ExcelMemberBulkLoader;
 use LeKoala\ExcelImportExport\Test\Mocks\TestExcelMember;
@@ -92,6 +95,36 @@ class ExcelImportExportTest extends SapphireTest
         $actual = ExcelGridFieldExportButton::sanitizeValue($dangerousInput);
         $expected = "\t" . $dangerousInput;
         self::assertEquals($expected, $actual);
+    }
+
+    public function testGetEagerLoadRelations(): void
+    {
+        Config::modify()->merge(TestExcelMember::class, 'has_one', [
+            'Owner' => Member::class,
+        ]);
+        $button = new class ('after', [
+            'Owner.Title' => 'Owner',
+            'Title' => 'Title',
+            'NotARelation.Title' => 'Not a relation',
+            'Owner.Groups.Title' => 'Nested relation',
+        ]) extends ExcelGridFieldExportButton {
+            /**
+             * @param GridField $gridField
+             * @return array<int,string>
+             */
+            public function exposeEagerLoadRelations(GridField $gridField): array
+            {
+                return $this->getEagerLoadRelations($gridField);
+            }
+        };
+        $gridField = GridField::create(
+            'Records',
+            'Records',
+            TestExcelMember::get(),
+            GridFieldConfig_Base::create()
+        );
+
+        self::assertSame(['Owner'], $button->exposeEagerLoadRelations($gridField));
     }
 
     public function testImportMultipleClasses(): void

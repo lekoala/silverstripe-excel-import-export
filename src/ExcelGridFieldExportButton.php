@@ -5,6 +5,7 @@ namespace LeKoala\ExcelImportExport;
 use Generator;
 use InvalidArgumentException;
 use SilverStripe\ORM\DataList;
+use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\Control\HTTPRequest;
@@ -194,12 +195,12 @@ class ExcelGridFieldExportButton implements
 
     /**
      * Make sure export name is a valid file name
-     * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
+     * @param GridField $gridField
      * @return void
      */
     protected function updateExportName($gridField)
     {
-        $filter = new FileNameFilter;
+        $filter = new FileNameFilter();
         if ($this->exportName) {
             $this->exportName = $filter->filter($this->exportName);
         } else {
@@ -212,7 +213,7 @@ class ExcelGridFieldExportButton implements
     }
 
     /**
-     * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
+     * @param GridField $gridField
      * @return DataList|ArrayList|SS_List|null
      */
     protected function retrieveList($gridField)
@@ -242,12 +243,50 @@ class ExcelGridFieldExportButton implements
             if (!empty($this->listFilters)) {
                 $list = $list->filter($this->listFilters);
             }
+
+            $relations = $this->getEagerLoadRelations($gridField);
+            if ($relations && method_exists(get_class($list), 'eagerLoad')) {
+                $list = $list->eagerLoad($relations);
+            }
         }
         return $list;
     }
 
     /**
-     * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
+     * Get top-level has_one relations used by the exported columns.
+     *
+     * @param GridField $gridField
+     * @return array<int,string>
+     */
+    protected function getEagerLoadRelations($gridField): array
+    {
+        $class = $gridField->getModelClass();
+        if (!$class || !is_a($class, DataObject::class, true)) {
+            return [];
+        }
+
+        $schema = DataObject::getSchema();
+        $relations = [];
+
+        foreach ($this->getRealExportColumns($gridField) as $columnSource => $columnHeader) {
+            $columnName = is_string($columnSource) ? $columnSource : $columnHeader;
+            if (!is_string($columnName) || substr_count($columnName, '.') !== 1) {
+                // Nested relations are deliberately unsupported until
+                // https://github.com/silverstripe/silverstripe-framework/pull/11909 is merged.
+                continue;
+            }
+
+            [$relationName] = explode('.', $columnName, 2);
+            if ($schema->hasOneComponent($class, $relationName) !== null) {
+                $relations[] = $relationName;
+            }
+        }
+
+        return array_values(array_unique($relations));
+    }
+
+    /**
+     * @param GridField $gridField
      * @return array<int|string,mixed|null>
      */
     protected function getRealExportColumns($gridField)
@@ -259,7 +298,7 @@ class ExcelGridFieldExportButton implements
     /**
      * Generate export fields for Excel.
      *
-     * @param GridField|\LeKoala\Tabulator\TabulatorGrid $gridField
+     * @param GridField $gridField
      */
     public function generateExportFileData($gridField): Generator
     {
