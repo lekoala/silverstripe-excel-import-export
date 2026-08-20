@@ -195,7 +195,7 @@ class ExcelBulkLoader extends BulkLoader
 
         $results = $this->processData($data, $preview);
 
-        $this->extend('onAfterProcessAll', $result, $preview);
+        $this->extend('onAfterProcessAll', $results, $preview);
 
         return $results;
     }
