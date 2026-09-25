@@ -67,6 +67,9 @@ class ExcelGridFieldExportButton implements
 
     protected bool $sanitizeXls = true;
 
+    /** @var array<string,string> XLSX formats keyed by export column source. */
+    protected array $columnFormats = [];
+
     /**
      * @param string $targetFragment The HTML fragment to write the button into
      * @param array<string> $exportColumns The columns to include in the export
@@ -188,7 +191,15 @@ class ExcelGridFieldExportButton implements
             $opts['autofilter'] = "A1:{$end}1";
         }
 
-        SpreadCompat::output($data, $fileName, ...$opts);
+        if ($ext === 'xlsx') {
+            foreach (array_keys($this->getRealExportColumns($gridField)) as $index => $source) {
+                if (isset($this->columnFormats[$source])) {
+                    $opts['columnFormats'][ExcelImportExport::getLetter($index + 1)] = $this->columnFormats[$source];
+                }
+            }
+        }
+
+        SpreadCompat::output($data, $fileName, $opts);
         exit();
     }
 
@@ -461,6 +472,18 @@ class ExcelGridFieldExportButton implements
     public function setExportColumns($cols)
     {
         $this->exportColumns = $cols;
+        return $this;
+    }
+
+    /**
+     * Set XLSX number formats by export column source.
+     *
+     * @param array<string,string> $formats
+     * @return $this
+     */
+    public function setColumnFormats(array $formats)
+    {
+        $this->columnFormats = $formats;
         return $this;
     }
 
